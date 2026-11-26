@@ -1,7 +1,7 @@
 import { FilePlus, FolderPlus, History, Search, Share2, Trash2, Upload } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { AnlegenDialog } from './AnlegenDialog';
-import { Dateiansicht, type EditorSlot } from './Dateiansicht';
+import { Dateiansicht, type DateiansichtProps, type EditorSlot } from './Dateiansicht';
 import { FreigabeDialog } from './FreigabeDialog';
 import { Ordnerbaum } from './Ordnerbaum';
 import { Papierkorbliste } from './Papierkorbliste';
@@ -34,12 +34,14 @@ export interface VaultBrowserProps {
     bestaetigen?: (frage: string) => boolean;
     /** Office-Dateien im EuroOffice-Editor oeffnen. */
     euroOffice?: boolean;
+    /** PDFs anmerken: PdfAnnotator aus `@peppermint-digital/vault/anmerken` einsetzen. */
+    renderPdf?: DateiansichtProps['renderPdf'];
 }
 
 type Seitenleiste = 'ansicht' | 'versionen' | 'papierkorb';
 type Dialogzustand = { art: 'datei' | 'ordner' | 'umbenennen'; ausgang: string } | null;
 
-export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, renderEditor, renderAnsicht, bestaetigen, euroOffice }: VaultBrowserProps) {
+export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, renderEditor, renderAnsicht, bestaetigen, euroOffice, renderPdf }: VaultBrowserProps) {
     const [bereich, setBereich] = useState<Bereichsangabe | null>(null);
     const [baum, setBaum] = useState<Baumeintrag[] | null>(null);
     const [pfad, setPfad] = useState(startPfad);
@@ -258,6 +260,8 @@ export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, ren
                                 renderEditor={renderEditor}
                                 renderAnsicht={renderAnsicht}
                                 euroOffice={euroOffice}
+                                renderPdf={renderPdf}
+                                epubLesefassungVorhanden={(p) => baum !== null && istDateiIn(baum, p)}
                             />
                         )}
                         <FreigabeDialog api={api} scope={scope} pfad={pfad} offen={freigabeOffen} onSchliessen={() => setFreigabeOffen(false)} />
@@ -291,6 +295,19 @@ export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, ren
             />
         </div>
     );
+}
+
+function istDateiIn(baum: Baumeintrag[], pfad: string): boolean {
+    for (const k of baum) {
+        if (k.path === pfad) {
+            return k.type === 'file';
+        }
+        if (k.type === 'folder' && pfad.startsWith(k.path + '/') && k.children) {
+            return istDateiIn(k.children, pfad);
+        }
+    }
+
+    return false;
 }
 
 function istOrdnerIn(baum: Baumeintrag[], pfad: string): boolean {

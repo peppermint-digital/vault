@@ -27,9 +27,9 @@ Plan und Herkunft: `codingshare/vault-paket-plan-2026-11-26.md`. Der Kern ist au
 | MCP-Bausteine (lesen, auflisten, suchen, schreiben) | `Mcp\*` (mit `laravel/mcp`) |
 | Vorschaubilder, PDF/EPUB-Anmerkungen mit Spiegelung in den Steckbrief | `Vorschaubilder`, `Anmerkungen\*`, `scripts/pdf_annotations.py` |
 | EuroOffice: Konfiguration, Datei, Rückweg, Blankovorlagen | `EuroOffice\*`, `Http\Controllers\EuroOfficeController`, `stubs/office/` |
-| Oberfläche (npm) | `EuroOfficeEditor`, `GeteilteAnsicht`, `VaultBrowser`, `Ordnerbaum`, `Dateiansicht`, `Versionsliste`, `Papierkorbliste`, `FreigabeDialog`, `AnlegenDialog`, `vaultApi` |
+| Oberfläche (npm) | `PdfAnnotator` (Einstieg `/anmerken`), `EpubAnnotator`, `EuroOfficeEditor`, `GeteilteAnsicht`, `VaultBrowser`, `Ordnerbaum`, `Dateiansicht`, `Versionsliste`, `Papierkorbliste`, `FreigabeDialog`, `AnlegenDialog`, `vaultApi` |
 
-**Noch nicht drin, folgt:** die Oberfläche für Anmerkungen (pdf.js/epub.js) und das ebenenweise Nachladen externer Quellen im Ordnerbaum. Die Schiene für beides steht schon.
+**Noch nicht drin, folgt:** das ebenenweise Nachladen externer Quellen im Ordnerbaum. Die Schiene dafür steht schon (`vaultApi.quelleEbene`).
 
 ## JSON-Schiene
 
@@ -88,6 +88,21 @@ Je Produkt gibt es einen eigenen Document Server mit eigenem JWT-Geheimnis (F40)
 - `GET vault/api/vorschau`: Vorschaubild mit 320 px (JPEG über GD, SVG direkt). Abgelegt unter `vault.vorschau.pfad`, außerhalb der Disk. Der Ordnerbaum zeigt es bei Bildern.
 - `GET/POST/PATCH/DELETE vault/api/anmerkungen`: PDF-Anmerkungen über PyMuPDF (`vault.anmerkungen.python`; ohne Python antwortet die Schiene mit 503). EPUB-Anmerkungen liegen in einer Datei daneben (`<buch>.epub.annot.json`). Jede Änderung wird in den Steckbrief `<stamm>.md` gespiegelt. Ansehen verlangt Leserecht, Ändern Schreibrecht.
 - **Neu gegenüber AI Brain:** Nach jeder PDF-Änderung gibt es eine Binärversion, denn PyMuPDF schreibt in die Datei selbst. Außerdem gehen Anmerkungen auch in geteilten Bereichen (in AI Brain nur privat).
+
+## Anmerken in der Oberfläche
+
+- **PDF:** `PdfAnnotator` liegt im eigenen Einstieg `@peppermint-digital/vault/anmerken`, weil er `pdfjs-dist` braucht (optionale peerDependency). Der Haupteinstieg bleibt frei davon; ein Test hält das fest. Das Produkt setzt ihn über `renderPdf` in `VaultBrowser` oder `Dateiansicht` ein:
+
+  ```tsx
+  import { PdfAnnotator } from '@peppermint-digital/vault/anmerken';
+  import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+  import 'pdfjs-dist/web/pdf_viewer.css';
+  import '@peppermint-digital/vault/annotator.css';
+
+  <VaultBrowser api={api} scope="private" renderPdf={({ api, scope, pfad }) => <PdfAnnotator api={api} scope={scope} path={pfad} workerUrl={workerUrl} />} />
+  ```
+
+- **EPUB:** `EpubAnnotator` ist im Haupteinstieg. Er öffnet sich automatisch, wenn die HTML-Lesefassung `<buch>.html` neben dem EPUB liegt.
 
 ## Externe Quellen
 

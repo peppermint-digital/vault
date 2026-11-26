@@ -1,5 +1,6 @@
 import { Download, Pencil, Save, X } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
+import { EpubAnnotator } from './anmerkungen/EpubAnnotator';
 import { EuroOfficeEditor } from './EuroOfficeEditor';
 import { VaultKonflikt, type VaultApi } from './transport';
 import { Button } from './ui/button';
@@ -31,6 +32,13 @@ export interface DateiansichtProps {
     onGespeichert?: (pfad: string) => void;
     /** Office-Dateien im EuroOffice-Editor oeffnen (Server muss eingerichtet sein). */
     euroOffice?: boolean;
+    /**
+     * PDFs lesen und anmerken. Das Produkt setzt hier den PdfAnnotator aus
+     * `@peppermint-digital/vault/anmerken` ein (braucht pdf.js); ohne Slot nur Herunterladen.
+     */
+    renderPdf?: (slot: { api: VaultApi; scope: string; pfad: string }) => ReactNode;
+    /** EPUB anmerken, wenn die Lesefassung `<buch>.html` daneben liegt. */
+    epubLesefassungVorhanden?: (pfad: string) => boolean;
 }
 
 const TEXT = /\.(md|markdown|txt|html?|json|csv|excalidraw)$/i;
@@ -42,7 +50,7 @@ type Zustand =
     | { art: 'fehler'; text: string }
     | { art: 'da'; inhalt: string; version: string };
 
-export function Dateiansicht({ api, scope, pfad, darfSchreiben, renderEditor, renderAnsicht, onGespeichert, euroOffice = false }: DateiansichtProps) {
+export function Dateiansicht({ api, scope, pfad, darfSchreiben, renderEditor, renderAnsicht, onGespeichert, euroOffice = false, renderPdf, epubLesefassungVorhanden }: DateiansichtProps) {
     const istText = TEXT.test(pfad);
     const [zustand, setZustand] = useState<Zustand>({ art: 'laedt' });
     const [entwurf, setEntwurf] = useState<string | null>(null);
@@ -104,6 +112,19 @@ export function Dateiansicht({ api, scope, pfad, darfSchreiben, renderEditor, re
         setZustand({ art: 'da', inhalt: konflikt.aktuellerInhalt ?? '', version: konflikt.aktuelleVersion });
         setEntwurf(null);
         setKonflikt(null);
+    }
+
+    if (!istText && renderPdf && /\.pdf$/i.test(pfad)) {
+        return <div className="flex h-[80vh] min-h-0 flex-col">{renderPdf({ api, scope, pfad })}</div>;
+    }
+
+    const lesefassung = pfad.replace(/\.epub$/i, '.html');
+    if (!istText && /\.epub$/i.test(pfad) && epubLesefassungVorhanden?.(lesefassung)) {
+        return (
+            <div className="flex h-[80vh] min-h-0 flex-col">
+                <EpubAnnotator api={api} scope={scope} path={pfad} htmlUrl={api.rohUrl(scope, lesefassung)} />
+            </div>
+        );
     }
 
     if (!istText) {

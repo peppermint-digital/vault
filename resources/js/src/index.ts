@@ -10,3 +10,7 @@ export * from './VaultBrowser';
 export { cn } from './ui/utils';
 export * from './GeteilteAnsicht';
 export * from './EuroOfficeEditor';
+export * from './anmerkungen/farben';
+export * from './anmerkungen/EpubAnnotator';
+export { default as AnmerkungsListe } from './anmerkungen/AnmerkungsListe';
+export { default as AnmerkungsLeiste } from './anmerkungen/AnmerkungsLeiste';

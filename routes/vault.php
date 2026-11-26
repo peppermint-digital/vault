@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Peppermint\Vault\Http\Controllers\AnmerkungenController;
 use Peppermint\Vault\Http\Controllers\DateienController;
 use Peppermint\Vault\Http\Controllers\EuroOfficeController;
 use Peppermint\Vault\Http\Controllers\FreigabenController;
@@ -37,3 +38,9 @@ Route::post('freigaben', [FreigabenController::class, 'anlegen'])->name('freigab
 Route::delete('freigaben/{freigabe}', [FreigabenController::class, 'zurueckziehen'])->whereNumber('freigabe')->name('freigaben.zurueckziehen');
 
 Route::get('eurooffice/konfiguration', [EuroOfficeController::class, 'konfiguration'])->name('eurooffice.konfiguration');
+
+Route::get('vorschau', [AnmerkungenController::class, 'vorschau'])->name('vorschau');
+Route::get('anmerkungen', [AnmerkungenController::class, 'liste'])->name('anmerkungen');
+Route::post('anmerkungen', [AnmerkungenController::class, 'anlegen'])->name('anmerkungen.anlegen');
+Route::patch('anmerkungen', [AnmerkungenController::class, 'aendern'])->name('anmerkungen.aendern');
+Route::delete('anmerkungen', [AnmerkungenController::class, 'entfernen'])->name('anmerkungen.entfernen');

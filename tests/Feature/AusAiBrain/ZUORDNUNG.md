@@ -20,10 +20,10 @@ Spalte **Wohin**:
 | VaultUnifiedTest | Paket (JSON-Schiene) / AI Brain (Inertia-Seite, Scope-Tabs, Vorschläge) | AusAiBrain/VaultRaeumeUndSchieneTest, HttpTest |
 | NoteShareTest | Paket (ohne das Umschreiben von `/notes/raw`- und `/vault/raw`-Adressen aus md2html) | AusAiBrain/VaultFreigabenTest, OeffentlicheFreigabeTest, HttpTest |
 | SharedVaultTest | AI Brain | Altbau `SharedVaultController`, entfällt in V6 |
-| VaultOfficeDateiAnlegenTest | später | mit EuroOffice (Blankovorlagen) |
-| EuroOfficeCallbackTest | später | mit EuroOffice |
+| VaultOfficeDateiAnlegenTest | Paket | AusAiBrain/EuroOfficeTest |
+| EuroOfficeCallbackTest | Paket | AusAiBrain/EuroOfficeTest (plus Nachprüfung der Schreibrechte am Rückweg) |
 | VaultExterneQuelleTest | später | mit SMB-Quellen |
-| AnnotationControllerTest, PdfEpubAnnotationTest | später | mit PDF/EPUB-Anmerkungen |
+| AnnotationControllerTest, PdfEpubAnnotationTest | Paket (Dienste und Schiene) / später (Annotator-Oberfläche) | AusAiBrain/AnmerkungenUndVorschauTest |
 | VaultDeleteMoveToolsTest, Mcp/VaultToolsAuthScopeTest, Mcp/WriteSharedNoteToolTest, SharedVaultMcpAccessTest | AI Brain, die bereichsneutralen Teile später | MCP-Bausteine |
 | VaultInitOnUserCreatedTest | AI Brain | Persona und Startdateien hängen an `KontoAngelegt`; das Ereignis selbst prüft VaultTest |
 | OAuthClientVaultSpaceTest, ChannelVaultAccessTest, AvatarUserRestrictionTest, MandatoryChannelsProvisioningTest | AI Brain | Kanäle, Avatare, OAuth |

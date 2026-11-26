@@ -202,6 +202,7 @@ export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, ren
                             onUmbenennen={(p) => setDialog({ art: 'umbenennen', ausgang: p })}
                             onLoeschen={loeschen}
                             onHerunterladen={(p) => globalThis.open(api.rohUrl(scope, p, true), '_blank')}
+                            vorschauUrl={(p) => (/\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(p) ? api.vorschauUrl(scope, p) : null)}
                         />
                     )}
                 </div>

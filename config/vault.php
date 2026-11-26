@@ -133,6 +133,20 @@ return [
         'praefix' => 'vault/eurooffice',
     ],
 
+    /*
+     | Vorschaubilder (GD) und PDF/EPUB-Anmerkungen. PDF braucht PyMuPDF: ohne
+     | `python` gibt es keine PDF-Anmerkungen (EPUB geht immer, es ist eine
+     | JSON-Datei daneben). Die Vorschaubilder liegen ausserhalb der Disk.
+     */
+    'vorschau' => [
+        'pfad' => env('VAULT_THUMBS_PATH'),             // null = storage/app/vault-thumbs
+    ],
+    'anmerkungen' => [
+        'python' => env('VAULT_PDF_PYTHON'),            // z.B. storage/app/python/venv/bin/python
+        'skript' => env('VAULT_PDF_SCRIPT'),            // null = scripts/pdf_annotations.py im Paket
+        'timeout' => (int) env('VAULT_PDF_TIMEOUT', 60),
+    ],
+
     'hochladen' => [
         'max_kb' => (int) env('VAULT_UPLOAD_MAX_KB', 51200),
     ],

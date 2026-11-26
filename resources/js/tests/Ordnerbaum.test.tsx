@@ -47,3 +47,18 @@ describe('Ordnerbaum', () => {
         unmount();
     });
 });
+
+describe('Ordnerbaum mit Vorschau', () => {
+    it('zeigt fuer Bilder ein Vorschaubild statt des Symbols', () => {
+        const bilder: Baumeintrag[] = [{ name: 'foto.png', path: 'foto.png', type: 'file' }, { name: 'n.md', path: 'n.md', type: 'file' }];
+        const { container, unmount } = render(
+            <Ordnerbaum baum={bilder} aktuellerPfad="" speicherSchluessel="v" onWaehlen={() => {}} vorschauUrl={(p) => (p.endsWith('.png') ? `/v/${p}` : null)} />,
+        );
+
+        const img = container.querySelectorAll('img');
+        expect(img).toHaveLength(1);
+        expect(img[0].getAttribute('src')).toBe('/v/foto.png');
+        expect(img[0].getAttribute('loading')).toBe('lazy');
+        unmount();
+    });
+});

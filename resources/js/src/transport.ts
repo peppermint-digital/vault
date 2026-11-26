@@ -61,6 +61,12 @@ export interface Freigabe {
     view_count: number;
 }
 
+export interface Anmerkungsliste {
+    type: 'pdf' | 'epub';
+    annotations: Record<string, unknown>[];
+    steckbrief?: string;
+}
+
 /** Die Antwort war kein Erfolg. `status` 0 = das Netz kam nicht durch. */
 export class VaultFehler extends Error {
     constructor(
@@ -174,6 +180,14 @@ export function vaultApi(optionen: VaultApiOptionen) {
         /** Signierte Editor-Konfiguration fuer EuroOffice (503, wenn nicht eingerichtet). */
         euroOfficeKonfiguration: (scope: string, path: string) =>
             anfrage<{ apiJsUrl: string; config: Record<string, unknown> }>('GET', 'eurooffice/konfiguration', { scope, path }),
+
+        /** Vorschaubild (320 px, JPEG; SVG direkt) — fuer `<img src>`. */
+        vorschauUrl: (scope: string, path: string) => adresse('vorschau', { scope, path }),
+
+        anmerkungen: (scope: string, path: string) => anfrage<Anmerkungsliste>('GET', 'anmerkungen', { scope, path }),
+        anmerkungAnlegen: (scope: string, daten: Record<string, unknown> & { path: string }) => anfrage<Anmerkungsliste>('POST', 'anmerkungen', { scope }, daten),
+        anmerkungAendern: (scope: string, daten: Record<string, unknown> & { path: string }) => anfrage<Anmerkungsliste>('PATCH', 'anmerkungen', { scope }, daten),
+        anmerkungEntfernen: (scope: string, daten: Record<string, unknown> & { path: string }) => anfrage<Anmerkungsliste>('DELETE', 'anmerkungen', { scope }, daten),
 
         freigaben: (scope: string, path: string) => anfrage<{ shares: Freigabe[] }>('GET', 'freigaben', { scope, path }),
         freigabeAnlegen: (scope: string, path: string, passwort?: string, tage?: number) =>

@@ -23,10 +23,11 @@ Plan und Herkunft: `codingshare/vault-paket-plan-2026-11-26.md`. Der Kern ist au
 | Freigabelinks | `Models\VaultShare` |
 | HTML → Markdown (Umzug der Manager-Notizen) | `Umwandlung\HtmlZuMarkdown` |
 | JSON-Schiene für die Oberfläche | `routes/vault.php`, `Http\Controllers\*` |
+| Vorschaubilder, PDF/EPUB-Anmerkungen mit Spiegelung in den Steckbrief | `Vorschaubilder`, `Anmerkungen\*`, `scripts/pdf_annotations.py` |
 | EuroOffice: Konfiguration, Datei, Rückweg, Blankovorlagen | `EuroOffice\*`, `Http\Controllers\EuroOfficeController`, `stubs/office/` |
 | Oberfläche (npm) | `EuroOfficeEditor`, `GeteilteAnsicht`, `VaultBrowser`, `Ordnerbaum`, `Dateiansicht`, `Versionsliste`, `Papierkorbliste`, `FreigabeDialog`, `AnlegenDialog`, `vaultApi` |
 
-**Noch nicht drin, folgt:** externe Quellen (SMB), PDF/EPUB-Anmerkungen, Vorschaubilder und MCP-Bausteine.
+**Noch nicht drin, folgt:** externe Quellen (SMB), MCP-Bausteine und die Oberfläche für Anmerkungen (pdf.js/epub.js). Die Schiene dafür steht schon.
 
 ## JSON-Schiene
 
@@ -79,6 +80,12 @@ Je Produkt gibt es einen eigenen Document Server mit eigenem JWT-Geheimnis (F40)
 - Der Rückweg glaubt dem Server nie, wohin er schreiben soll: Das Ziel steht in unserem Token. Die Nutzlast muss signiert sein, und Dateien werden nur vom eigenen Document Server geholt (Schutz gegen SSRF). Eine leere oder fehlgeschlagene Antwort überschreibt nichts.
 - **Neu gegenüber AI Brain:** Das Rückweg-Token trägt die Person. Beim Speichern wird über `Vaultrechte` erneut geprüft, ob sie noch schreiben darf.
 - Neue `.docx`, `.xlsx` und `.pptx` entstehen als Kopie der leeren Vorlagen in `stubs/office/`. Die Vorlagen sind mit LibreOffice erzeugt und enthalten keinen Autor.
+
+## Vorschaubilder und Anmerkungen
+
+- `GET vault/api/vorschau`: Vorschaubild mit 320 px (JPEG über GD, SVG direkt). Abgelegt unter `vault.vorschau.pfad`, außerhalb der Disk. Der Ordnerbaum zeigt es bei Bildern.
+- `GET/POST/PATCH/DELETE vault/api/anmerkungen`: PDF-Anmerkungen über PyMuPDF (`vault.anmerkungen.python`; ohne Python antwortet die Schiene mit 503). EPUB-Anmerkungen liegen in einer Datei daneben (`<buch>.epub.annot.json`). Jede Änderung wird in den Steckbrief `<stamm>.md` gespiegelt. Ansehen verlangt Leserecht, Ändern Schreibrecht.
+- **Neu gegenüber AI Brain:** Nach jeder PDF-Änderung gibt es eine Binärversion, denn PyMuPDF schreibt in die Datei selbst. Außerdem gehen Anmerkungen auch in geteilten Bereichen (in AI Brain nur privat).
 
 ## Verträge
 

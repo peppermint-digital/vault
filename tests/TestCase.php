@@ -35,6 +35,7 @@ abstract class TestCase extends Base
         $app['config']->set('filesystems.disks.vault', ['driver' => 'local', 'root' => $this->wurzel.'/vaults', 'throw' => true]);
         $app['config']->set('vault.versionen.pfad', $this->wurzel.'/versions');
         $app['config']->set('vault.papierkorb.pfad', $this->wurzel.'/trash');
+        $app['config']->set('vault.vorschau.pfad', $this->wurzel.'/thumbs');
     }
 
     protected function defineDatabaseMigrations(): void

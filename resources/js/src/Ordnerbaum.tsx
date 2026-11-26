@@ -30,6 +30,8 @@ export interface OrdnerbaumProps {
     onHerunterladen?: (pfad: string) => void;
     nurLesen?: boolean;
     leerText?: string;
+    /** Adresse eines Vorschaubildes, oder null fuer „Symbol". Fehlt es, bleibt es bei Symbolen. */
+    vorschauUrl?: (pfad: string) => string | null;
 }
 
 const PRAEFIX = 'peppermint-vault-offen:';
@@ -112,6 +114,22 @@ function Eintrag(props: EintragProps) {
                         <>
                             {offen ? <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" /> : <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />}
                             {offen ? <FolderOpen className="size-4 shrink-0 text-primary" /> : <Folder className="size-4 shrink-0 text-primary" />}
+                        </>
+                    ) : props.vorschauUrl?.(knoten.path) ? (
+                        <>
+                            <span className="w-3.5" />
+                            {/* lazy: Auf einer Bildablage stehen hunderte Zeilen untereinander. */}
+                            <img
+                                src={props.vorschauUrl(knoten.path) ?? undefined}
+                                alt=""
+                                loading="lazy"
+                                decoding="async"
+                                className="size-6 shrink-0 rounded-sm border object-cover"
+                                onError={(e) => {
+                                    // Kein zerbrochenes Bild stehen lassen — das sieht nach Datenverlust aus.
+                                    e.currentTarget.style.display = 'none';
+                                }}
+                            />
                         </>
                     ) : (
                         <>

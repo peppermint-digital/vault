@@ -46,7 +46,7 @@ it('traegt ohne Autor "anmerkung" ein, auch beim Entfernen', function () {
 
 it('vergisst den Verweis-Cache nach einer Anmerkung', function () {
     $verweise = Mockery::mock($this->vault->verweise())->makePartial();
-    $verweise->shouldReceive('vergessen')->once()->with(Mockery::on(fn ($b) => $b->scope() === 'user:1'));
+    $verweise->shouldReceive('vergessen')->atLeast()->once()->with(Mockery::on(fn ($b) => $b->scope() === 'user:1'));
     $this->app->instance(Verweise::class, $verweise);
     $this->app->forgetInstance(Vault::class);
 

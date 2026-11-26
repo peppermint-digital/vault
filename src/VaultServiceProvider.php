@@ -2,6 +2,7 @@
 
 namespace Peppermint\Vault;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Peppermint\Vault\Bereichsnamen\StandardNamen;
@@ -10,6 +11,9 @@ use Peppermint\Vault\Contracts\Benutzeradresse;
 use Peppermint\Vault\Contracts\Bereichsnamen;
 use Peppermint\Vault\Contracts\Einhaengung;
 use Peppermint\Vault\Contracts\Vaultrechte;
+use Peppermint\Vault\Events\DateiGeloescht;
+use Peppermint\Vault\Events\DateiGespeichert;
+use Peppermint\Vault\Events\DateiVerschoben;
 use Peppermint\Vault\Quellen\Geraetepruefung;
 use Peppermint\Vault\Quellen\Quellen;
 use Peppermint\Vault\Rechte\EmailAdresse;
@@ -62,6 +66,17 @@ class VaultServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([PapierkorbLeerenCommand::class]);
         }
+
+        /*
+         * Der Verweisgraph liegt im geteilten Laravel-Cache (nicht im Speicher
+         * eines Arbeiters). Vergessen wird an EINER Stelle, an jedem Datei-
+         * Ereignis — auch auf Wegen, die selbst kein vergessen() rufen
+         * (Papierkorb::zurueckholen lieferte den Graph sonst bis zu 24 h alt).
+         */
+        Event::listen(
+            [DateiGespeichert::class, DateiVerschoben::class, DateiGeloescht::class],
+            fn (DateiGespeichert|DateiVerschoben|DateiGeloescht $ereignis) => $this->app->make(Verweise::class)->vergessen($ereignis->bereich),
+        );
 
         if (config('vault.routen.an', true)) {
             Route::prefix((string) config('vault.routen.praefix', 'vault/api'))

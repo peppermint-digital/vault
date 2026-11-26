@@ -275,6 +275,9 @@ export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, ren
                 ausgang={dialog?.ausgang ?? ''}
                 onSchliessen={() => setDialog(null)}
                 onBestaetigen={dialogBestaetigt}
+                formate={euroOffice ? ['md', 'docx', 'xlsx', 'pptx'] : ['md']}
+                vorhanden={namenIn(baum, dialog === null ? '' : dialog.art === 'umbenennen' ? ordnerVon(dialog.ausgang) : dialog.ausgang)}
+                bereichName={bereich?.label}
             />
 
             <input
@@ -295,6 +298,20 @@ export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, ren
             />
         </div>
     );
+}
+
+/** Namen im Ordner `ordner` ('' = oberste Ebene), fuer den Hinweis „gibt es schon". */
+function namenIn(baum: Baumeintrag[] | null, ordner: string): string[] {
+    let ebene = baum ?? [];
+    for (const teil of ordner.split('/').filter(Boolean)) {
+        ebene = ebene.find((e) => e.type === 'folder' && e.name === teil)?.children ?? [];
+    }
+    return ebene.map((e) => e.name);
+}
+
+function ordnerVon(pfad: string): string {
+    const i = pfad.lastIndexOf('/');
+    return i === -1 ? '' : pfad.slice(0, i);
 }
 
 function istDateiIn(baum: Baumeintrag[], pfad: string): boolean {

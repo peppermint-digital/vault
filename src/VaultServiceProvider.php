@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Peppermint\Vault\Bereichsnamen\StandardNamen;
 use Peppermint\Vault\Console\PapierkorbLeerenCommand;
+use Peppermint\Vault\Console\VersionenAufraeumenCommand;
 use Peppermint\Vault\Contracts\Benutzeradresse;
 use Peppermint\Vault\Contracts\Bereichsnamen;
 use Peppermint\Vault\Contracts\Einhaengung;
@@ -64,7 +65,7 @@ class VaultServiceProvider extends ServiceProvider
         ], 'vault-config');
 
         if ($this->app->runningInConsole()) {
-            $this->commands([PapierkorbLeerenCommand::class]);
+            $this->commands([PapierkorbLeerenCommand::class, VersionenAufraeumenCommand::class]);
         }
 
         /*

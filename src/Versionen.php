@@ -18,6 +18,19 @@ class Versionen
     /** Endungen, die als Notiz versioniert werden (Text-Weg). */
     public const EDITIERBAR = ['md', 'html', 'excalidraw'];
 
+    /**
+     * Versionen einer geloeschten Datei stehen unter diesem Praefix, solange sie
+     * im Papierkorb liegt (#10293). Ein echter Pfad kann kein Nullbyte enthalten
+     * (Bereich und Ablage weisen es ab) — eine neue Datei am alten Ort erbt so
+     * nie die Geschichte der geloeschten.
+     */
+    public const PAPIERKORB = "\0papierkorb/";
+
+    public static function papierkorbPfad(int $eintragId, string $pfad): string
+    {
+        return self::PAPIERKORB.$eintragId.'/'.ltrim($pfad, '/');
+    }
+
     public function __construct(private readonly Ablage $ablage) {}
 
     /** Dedupliziert gleichen Inhalt und beschneidet auf die Hoechstzahl je Datei. */
@@ -30,6 +43,11 @@ class Versionen
 
             $letzte = $this->letzte($bereich, $pfad);
             if ($letzte !== null && $letzte->content === $inhalt) {
+                return;
+            }
+
+            // Eine frisch angelegte, leere Datei ist kein Stand, zu dem man zurueck will.
+            if ($letzte === null && $inhalt === '') {
                 return;
             }
 
@@ -162,6 +180,32 @@ class Versionen
         } catch (\Throwable $e) {
             Log::warning('vault: Versionen nicht mitverschoben', ['error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Endgueltig: alle Versionen unter `$pfad` (Datei oder Ordner) samt ihrer
+     * abgelegten Dateien. Nur fuer Papierkorb-Pfade gedacht — am echten Pfad
+     * koennte inzwischen eine neue Datei mit eigener Geschichte liegen.
+     *
+     * @return int Anzahl entfernter Versionen
+     */
+    public function entfernen(string $scope, string $pfad): int
+    {
+        $weg = VaultVersion::query()
+            ->where('scope', $scope)
+            ->where(fn ($q) => $q->where('path', $pfad)->orWhere('path', 'like', $pfad.'/%'))
+            ->get()
+            ->filter(fn (VaultVersion $v): bool => $v->path === $pfad || str_starts_with($v->path, $pfad.'/'));
+
+        foreach ($weg as $version) {
+            $blob = $version->absoluteStoragePath();
+            if ($blob !== null && is_file($blob)) {
+                @unlink($blob);
+            }
+            $version->delete();
+        }
+
+        return $weg->count();
     }
 
     private function letzte(Bereich $bereich, string $pfad): ?VaultVersion

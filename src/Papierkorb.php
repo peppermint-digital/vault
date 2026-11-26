@@ -21,6 +21,7 @@ class Papierkorb
     public function __construct(
         private readonly Ablage $ablage,
         private readonly Dateikennung $kennung,
+        private readonly Versionen $versionen,
     ) {}
 
     public function ablegen(Bereich $bereich, string $pfad, bool $istOrdner, ?int $geloeschtVon = null): VaultTrash
@@ -62,6 +63,9 @@ class Papierkorb
             'deleted_at' => now(),
         ]);
 
+        // Die Geschichte geht mit in den Papierkorb (#10293).
+        $this->versionen->verschoben($bereich, $eintrag->original_path, Versionen::papierkorbPfad($eintrag->id, $eintrag->original_path));
+
         $this->kennung->geloescht($bereich, $pfad, $eintrag);
         Event::dispatch(new DateiGeloescht($bereich, ltrim($pfad, '/'), $istOrdner, $eintrag->id));
 
@@ -91,6 +95,8 @@ class Papierkorb
         $quelle = $eintrag->absoluterPfad();
 
         if (! file_exists($quelle)) {
+            // Die Versionen bleiben stehen: Fehlt der Inhalt, sind sie womoeglich die
+            // einzige Kopie. `vault:versionen-aufraeumen --trocken` zaehlt sie.
             $eintrag->delete();
 
             throw new NotFoundHttpException('Der Inhalt im Papierkorb fehlt.');
@@ -102,7 +108,10 @@ class Papierkorb
         $absolut = $this->ablage->aufloesen($bereich, $ziel);
         File::ensureDirectoryExists(dirname($absolut), 0775, true);
         File::move($quelle, $absolut);
+        $this->tokenOrdnerEntfernen($eintrag);
 
+        // An den Pfad, an dem die Datei jetzt WIRKLICH liegt — auch bei „-wiederhergestellt".
+        $this->versionen->verschoben($bereich, $this->versionsPfad($eintrag), $ziel);
         $this->kennung->wiederhergestellt($eintrag, $ziel);
         $eintrag->delete();
 
@@ -111,7 +120,11 @@ class Papierkorb
         return $ziel;
     }
 
-    /** Endgueltig entfernen — Inhalt, Zeile, Datei-IDs. */
+    /**
+     * Endgueltig entfernen — Inhalt, Versionen, Zeile, Datei-IDs. Was hier
+     * geht, muss weg sein: Versionen blieben sonst als unsichtbare Kopie
+     * stehen (#10293).
+     */
     public function leeren(VaultTrash $eintrag): void
     {
         $pfad = $eintrag->absoluterPfad();
@@ -121,9 +134,31 @@ class Papierkorb
         } else {
             File::delete($pfad);
         }
+        $this->tokenOrdnerEntfernen($eintrag);
 
+        $this->versionen->entfernen($eintrag->scope, $this->versionsPfad($eintrag));
         $this->kennung->entfernt($eintrag);
         $eintrag->delete();
+    }
+
+    private function versionsPfad(VaultTrash $eintrag): string
+    {
+        return Versionen::papierkorbPfad($eintrag->id, $eintrag->original_path);
+    }
+
+    /** Den Ordner `<papierkorb>/<token>/` — nur ihn, nur wenn leer, nie rekursiv. */
+    private function tokenOrdnerEntfernen(VaultTrash $eintrag): void
+    {
+        $ordner = dirname($eintrag->absoluterPfad());
+        $wurzel = realpath($this->ablage->papierkorbPfad());
+
+        if (! is_dir($ordner) || $wurzel === false || realpath($ordner) === $wurzel || dirname((string) realpath($ordner)) !== $wurzel) {
+            return;
+        }
+
+        if (count(scandir($ordner) ?: []) === 2) {
+            @rmdir($ordner);
+        }
     }
 
     private function freierPfad(Bereich $bereich, string $pfad): string

@@ -4,8 +4,10 @@ namespace Peppermint\Vault;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Peppermint\Vault\Bereichsnamen\StandardNamen;
 use Peppermint\Vault\Console\PapierkorbLeerenCommand;
 use Peppermint\Vault\Contracts\Benutzeradresse;
+use Peppermint\Vault\Contracts\Bereichsnamen;
 use Peppermint\Vault\Contracts\Einhaengung;
 use Peppermint\Vault\Contracts\Vaultrechte;
 use Peppermint\Vault\Quellen\Geraetepruefung;
@@ -34,6 +36,9 @@ class VaultServiceProvider extends ServiceProvider
         $this->app->bindIf(Vaultrechte::class, Standardrechte::class, true);
         $this->app->bindIf(Benutzeradresse::class, EmailAdresse::class, true);
         $this->app->bindIf(Einhaengung::class, Geraetepruefung::class, true);
+        // Singleton: Produkte melden ihre Praefixe einmal im boot() an.
+        $this->app->singleton(StandardNamen::class);
+        $this->app->bindIf(Bereichsnamen::class, fn ($app) => $app->make(StandardNamen::class), true);
         $this->app->singleton(Quellen::class);
 
         $this->app->singleton(Ablage::class);

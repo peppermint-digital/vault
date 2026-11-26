@@ -21,6 +21,7 @@ Plan und Herkunft: `codingshare/vault-paket-plan-2026-11-26.md`. Der Kern ist au
 | Verweisgraph `[[wikilinks]]` | `Verweise` |
 | Räume, Mitglieder | `Models\VaultSpace` |
 | Freigabelinks | `Models\VaultShare` |
+| Namen der Bereiche in Anfragen | Vertrag `Bereichsnamen`, Vorgabe `StandardNamen` |
 | HTML → Markdown (Umzug der Manager-Notizen) | `Umwandlung\HtmlZuMarkdown` |
 | JSON-Schiene für die Oberfläche | `routes/vault.php`, `Http\Controllers\*` |
 | Externe Quellen (SMB, nur mit `vault.quellen`) | `Quellen\*`, `Models\VaultSource`, Vertrag `Einhaengung` |
@@ -120,6 +121,33 @@ Mit `laravel/mcp` gibt es vier abstrakte Werkzeuge: `VaultLesen`, `VaultAufliste
 - **Ohne angemeldete Person gibt es keine Antwort.** Der Rückfall auf einen globalen Bereich aus AI Brain fehlt bewusst (Plan, Falle 8).
 - Die Rechte laufen über `Vaultrechte`, wie in der Oberfläche.
 - `VaultSchreiben` schreibt mit `base_version` nie über eine inzwischen geänderte Fassung. Der Autor heißt in den Versionen „assistant für <Person>“.
+
+## Bereichsnamen (0.3.0)
+
+`?scope=` wird über den Vertrag `Contracts\Bereichsnamen` aufgelöst. Die Vorgabe `Bereichsnamen\StandardNamen` kennt drei Formen:
+- `private`
+- Raum-Slugs
+- `extern:<slug>`, nur mit eingeschalteten Quellen
+
+Ein Produkt meldet weitere Präfixe an, ohne die Vorgabe nachzubauen:
+
+```php
+app(StandardNamen::class)->praefix('objekt:',
+    aus: fn (string $rest, $person) => /* Bereich oder null */,
+    name: fn (Bereich $b) => /* Rest-Name oder null */,
+    bezeichnung: fn (Bereich $b) => /* Überschrift */);
+```
+
+- Rechte entscheidet weiter `Vaultrechte`.
+- Ein unbekannter Name gibt wie ein fremder Bereich 404.
+- Präfixe enden mit `:`, damit kein Raum sie überdecken kann. `extern:` ist eingebaut und lässt sich nicht überschreiben.
+
+## Fassungen übernehmen (0.3.0)
+
+`Versionen::uebernehmen($bereich, $pfad, $inhalt, $autor, $zeitpunkt)` legt eine Fassung mit vorgegebenem Inhalt, Autor und Zeitpunkt an, etwa das Original-HTML einer alten Notiz beim Umzug.
+
+- Anders als beim normalen Schreiben wirft der Aufruf bei Fehlern.
+- Er beschneidet selbst nicht. Spätere Schreibvorgänge kürzen aber wie immer auf die neuesten `max_je_datei` Fassungen. Nach so vielen Bearbeitungen fällt auch die übernommene Fassung weg.
 
 ## Verträge
 

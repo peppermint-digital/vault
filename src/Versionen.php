@@ -93,6 +93,39 @@ class Versionen
     }
 
     /**
+     * Eine Fassung mit vorgegebenem Inhalt, Autor und Zeitpunkt uebernehmen —
+     * fuer Umzuege (V3c: Fassung 1 = Original-HTML der alten Notiz, mit dem
+     * Autor und dem Zeitpunkt der Quelle).
+     *
+     * Anders als {@see text()} WIRFT dieser Weg: Ein Umzug muss wissen, ob die
+     * Fassung angelegt ist, sonst waere „verlustfrei" nicht pruefbar. Kein
+     * Abgleich auf gleichen Inhalt und keine Endungspruefung — uebernommen
+     * wird, was die Quelle hatte. Dieser Aufruf beschneidet nicht.
+     *
+     * GRENZE: Spaetere Schreibvorgaenge beschneiden wie immer auf die neuesten
+     * `versionen.max_je_datei` (Vorgabe 30). Nach so vielen Bearbeitungen faellt
+     * auch die uebernommene Fassung weg. Ob sie dauerhaft geschuetzt sein muss,
+     * ist offen (Frage an Bastian, Meldung 0.3.0).
+     */
+    public function uebernehmen(Bereich $bereich, string $pfad, string $inhalt, ?string $autor, \DateTimeInterface $zeitpunkt): VaultVersion
+    {
+        $pfad = trim(str_replace('\\', '/', $pfad), '/');
+
+        if ($pfad === '') {
+            throw new \InvalidArgumentException('Eine Fassung braucht einen Pfad.');
+        }
+
+        return VaultVersion::query()->create([
+            'scope' => $bereich->scope(),
+            'path' => $pfad,
+            'content' => $inhalt,
+            'author' => $autor !== null ? mb_substr($autor, 0, 128) : null,
+            'size' => strlen($inhalt),
+            'created_at' => $zeitpunkt,
+        ]);
+    }
+
+    /**
      * Neueste zuerst, OHNE Inhalt. `storage_path` muss mit, sonst haelt die
      * Oberflaeche jeden Binaerstand fuer Text.
      *

@@ -132,6 +132,10 @@ Document Server ──https──► <APP_URL>/vault/eurooffice/…   (Datei hol
 - **`location ^~ /eurooffice/`.** Ohne `^~` gewinnen die Regex-Locations der Site (`\.php$`).
 - **`X-Forwarded-Prefix /eurooffice`.** Der Document Server baut die Adressen für den Browser aus der Anfrage. Ohne Präfix lädt der Editor und meldet dann „Herunterladen ist fehlgeschlagen“ (AI Brain, Learning #4031).
 - **WebSocket-Upgrade** über die `map` aus `nginx-forge-before.conf`.
+- **Wer durchreicht, darf nicht mit der Anwendung neu starten.**
+  - Bei nginx vor PHP-FPM (Forge) ist das so: Ein Deploy lädt nur PHP-FPM neu, die Editor-Verbindung bleibt.
+  - Läuft das Produkt unter Octane/FrankenPHP und reicht dessen eigener Caddy den Pfad durch, reißt jeder Neustart des Dienstes offene Bearbeitungen mit. So war es in AI Brain am 24.09.2026, Commit 88b9244b. Dann gehört die Durchreichung in einen Webserver **vor** der Anwendung.
+  - Ob ein `octane:reload` die Verbindung ebenfalls trennt, ist nicht gemessen.
 - **Datei-Adressen beim Rückweg (0.4.1):**
   - Teilt sich der Document Server den Host mit dem Produkt, nimmt der Rückweg nur Adressen **unterhalb** von `EUROOFFICE_PUBLIC_URL` an, also `/eurooffice/…`, nicht irgendeine Seite des Produkts.
   - Geholt wird über `EUROOFFICE_INTERNAL_URL` (127.0.0.1), nicht über die eigene Domain.

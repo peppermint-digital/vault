@@ -69,6 +69,10 @@ In jedem Produkt sieht die Vault-Leiste gleich aus, Vorbild ist AI Brain. Die Le
   - „Ordner hochladen“ gibt es oben und im ⋮ eines Ordners. Unterordner bleiben erhalten.
   - Hochgeladen wird nacheinander; der Server legt fehlende Ordner selbst an.
   - Ohne Schreibrecht gibt es weder Ablage noch Knopf.
+- **Dateien ohne Ordner** (0.6.3): `vault.hochladen.ohne_ordner` legt fest, wohin eine Datei geht, die ohne Ordner hochgeladen wird. Das betrifft den Knopf oben und das Ziehen, wenn kein Ordner offen ist.
+  - Vorgabe ist `_attachments`. So macht es AI Brain: Dort zeigt der Steckbrief-Link des Avatars auf diesen Ordner, und ein hochgeladenes Dokument soll ihn ohne weiteres Zutun finden.
+  - Ein Produkt ohne Steckbrief setzt `''`; dann landet die Datei oben im Bereich. Der Manager tut das.
+  - Externe Quellen legen ohne Ordner schon immer oben ab.
 - **Öffentliche Schiene** (0.6.1):
   - `vault.routen.oeffentlich_an` (Vorgabe `true`) schaltet `vault/geteilt/{token}/…` allein ab.
   - Das Entsperren nutzt die **benannte** Drossel `vault.routen.drossel_entsperren` (Vorgabe `vault-entsperren`). Fehlt der Begrenzer im Produkt, meldet ihn das Paket mit 10 pro Minute je IP an; das wirkt wie das frühere `throttle:10,1`.

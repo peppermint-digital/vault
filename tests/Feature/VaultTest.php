@@ -187,3 +187,26 @@ it('meldet jedes Speichern mit Datei-ID', function () {
 
     Event::assertDispatched(DateiGespeichert::class, fn ($e) => $e->dateiId !== null && $e->autor === 'assistant');
 });
+
+/*
+ * 0.6.3: Wohin eine Datei ohne Ordner geht, ist einstellbar. Vorgabe bleibt
+ * `_attachments` (AI Brain, Steckbrief-Link); der Manager legt oben ab.
+ */
+it('legt ohne Ordner nach der Vorgabe in _attachments', function () {
+    expect($this->vault->hochladen($this->bereich, '', UploadedFile::fake()->createWithContent('a.pdf', 'x')))->toBe('_attachments/a.pdf');
+});
+
+it('legt ohne Ordner oben im Bereich ab, wenn das Produkt es so einstellt', function () {
+    config()->set('vault.hochladen.ohne_ordner', '');
+
+    $erste = $this->vault->hochladen($this->bereich, '', UploadedFile::fake()->createWithContent('a.pdf', 'x'));
+    $zweite = $this->vault->hochladen($this->bereich, '/', UploadedFile::fake()->createWithContent('a.pdf', 'y'));
+
+    expect($erste)->toBe('a.pdf')->and($zweite)->toBe('a-1.pdf');
+});
+
+it('nimmt einen eigenen Ordner fuer Dateien ohne Ordner', function () {
+    config()->set('vault.hochladen.ohne_ordner', 'eingang/');
+
+    expect($this->vault->hochladen($this->bereich, '', UploadedFile::fake()->createWithContent('a.pdf', 'x')))->toBe('eingang/a.pdf');
+});

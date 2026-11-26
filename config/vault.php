@@ -185,6 +185,11 @@ return [
 
     'hochladen' => [
         'max_kb' => (int) env('VAULT_UPLOAD_MAX_KB', 51200),
+        // Wohin eine Datei geht, die OHNE Ordner hochgeladen wird (Knopf oben,
+        // Ziehen ohne offenen Ordner). Vorgabe `_attachments` wie in AI Brain:
+        // Dort zeigt der Steckbrief-Link des Avatars auf diesen Ordner. Ein
+        // Produkt ohne Steckbrief (Manager) setzt '' = oben im Bereich (0.6.3).
+        'ohne_ordner' => '_attachments',
     ],
 
     /*

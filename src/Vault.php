@@ -244,7 +244,7 @@ class Vault
      */
     public function hochladen(Bereich $bereich, string $ordner, UploadedFile $datei, ?string $autor = null): string
     {
-        $ordner = trim($ordner, '/') ?: '_attachments';
+        $ordner = trim($ordner, '/') ?: trim((string) config('vault.hochladen.ohne_ordner', '_attachments'), '/');
         $name = $this->sichererName($datei->getClientOriginalName());
         $rel = $this->freierName($bereich, $ordner, $name);
 
@@ -419,9 +419,10 @@ class Vault
         $stamm = pathinfo($name, PATHINFO_FILENAME);
         $anhang = $endung !== '' ? '.'.$endung : '';
 
-        $kandidat = "{$ordner}/{$name}";
+        $praefix = $ordner === '' ? '' : $ordner.'/';
+        $kandidat = $praefix.$name;
         for ($i = 1; File::exists($this->ablage->aufloesen($bereich, $kandidat)); $i++) {
-            $kandidat = "{$ordner}/{$stamm}-{$i}{$anhang}";
+            $kandidat = "{$praefix}{$stamm}-{$i}{$anhang}";
         }
 
         return $kandidat;

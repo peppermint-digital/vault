@@ -7,5 +7,5 @@ export default defineConfig({
     clean: true,
     // React bleibt beim Produkt, sobald Bausteine dazukommen: zwei React-Instanzen
     // im selben Baum enden in „Invalid hook call".
-    external: ['react', 'react-dom', '@inertiajs/react', 'pdfjs-dist'],
+    external: ['react', 'react-dom', '@inertiajs/react', 'pdfjs-dist', 'd3'],
 });

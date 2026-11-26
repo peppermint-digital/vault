@@ -49,6 +49,7 @@ class VaultServiceProvider extends ServiceProvider
         $this->app->singleton(Ablage::class);
         $this->app->singleton(Dateikennung::class);
         $this->app->singleton(Versionen::class);
+        $this->app->singleton(Navigation::class);
         $this->app->singleton(Papierkorb::class);
         $this->app->singleton(Verweise::class);
         $this->app->singleton(Vault::class);

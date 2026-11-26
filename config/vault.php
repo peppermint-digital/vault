@@ -185,6 +185,19 @@ return [
      | Quellen tragen ihren eigenen Namen; der persoenliche Bereich heisst je
      | Produkt anders (AI Brain „Privat", Manager „Mein Arbeits-Vault").
      */
+    /*
+     | Die Leiste des Vaults (0.5.0): dieselben Eintraege in jedem Produkt.
+     | Die Bereiche stehen NICHT in der Leiste, sondern als Reiter auf der Seite
+     | (`Bereichsreiter`). Pfade je Produkt; `null` laesst den Eintrag weg.
+     | Eigenes (Manager: Objekte, AI Brain: Externe Quellen) haengt das Produkt
+     | selbst hinten an.
+     */
+    'navigation' => [
+        'vault' => '/vault',
+        'graph' => '/vault/graph',
+        'freigaben' => '/vault/freigaben',
+    ],
+
     'bezeichnungen' => [
         'persoenlich' => 'Persönlich',
     ],

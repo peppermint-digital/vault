@@ -9,7 +9,7 @@
  * darf nie wie ein gelungenes aussehen. Der Konflikt (409) hat einen eigenen
  * Typ, weil er kein Fehler ist, sondern eine Frage an die Person.
  */
-import type { Baumeintrag, Suchtreffer } from './typen';
+import type { Baumeintrag, Suchtreffer, Verweisgraph } from './typen';
 
 export interface VaultApiOptionen {
     /** z.B. `/vault/api` — ohne Schraegstrich am Ende. */
@@ -168,6 +168,8 @@ export function vaultApi(optionen: VaultApiOptionen) {
             return anfrage<{ path: string; file_id: string | null }>('POST', 'hochladen', { scope }, formular);
         },
         suche: (scope: string, q: string) => anfrage<Suchtreffer[]>('GET', 'suche', { scope, q }),
+        /** Verweisgraph EINES Bereichs ([[wikilinks]]). Fremder Bereich: 404 wie ueberall. */
+        verweise: (scope: string) => anfrage<Verweisgraph>('GET', 'verweise', { scope }),
 
         versionen: (scope: string, path: string) => anfrage<{ versions: Versionszeile[] }>('GET', 'versionen', { scope, path }),
         versionInhalt: (id: number) => anfrage<{ id: number; path: string; binary: boolean; content: string | null }>('GET', `versionen/${id}`),

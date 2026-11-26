@@ -1,0 +1,28 @@
+{
+    "name": "@peppermint-digital/vault",
+    "version": "0.1.0",
+    "description": "Die Browser-Haelfte zu peppermint/vault. In 0.1.0 nur die Datenformen des PHP-Pakets; Baum, Dateiansicht, Versionen und Freigaben folgen als Bausteine.",
+    "license": "MIT",
+    "type": "module",
+    "main": "./dist/index.js",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsup",
+        "typecheck": "tsc --noEmit",
+        "prepare": "npm run build"
+    },
+    "devDependencies": {
+        "tsup": "^8.0.0",
+        "typescript": "^5.4.0"
+    }
+}

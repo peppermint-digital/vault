@@ -20,6 +20,9 @@ export interface EditorSlot {
     pfad: string;
     wert: string;
     onAendern: (wert: string) => void;
+    /** Bereich der Datei (0.6.1) — z. B. fuer einen Editor, der selbst Bilder einfuegt. */
+    scope: string;
+    darfSchreiben: boolean;
 }
 
 export interface DateiansichtProps {
@@ -192,7 +195,7 @@ export function Dateiansicht({ api, scope, pfad, darfSchreiben, renderEditor, re
 
             {bearbeitet ? (
                 renderEditor ? (
-                    renderEditor({ pfad, wert: entwurf, onAendern: setEntwurf })
+                    renderEditor({ pfad, wert: entwurf, onAendern: setEntwurf, scope, darfSchreiben })
                 ) : (
                     <textarea
                         className="min-h-[50vh] w-full rounded-md border bg-background p-3 font-mono text-sm"

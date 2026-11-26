@@ -128,6 +128,13 @@ return [
         // Die SEITE eines Freigabelinks (gehoert dem Produkt): /<freigabe_praefix>/<token>
         'freigabe_praefix' => 'geteilt',
         // Die oeffentliche Schiene dazu (info, entsperren, roh), ohne Anmeldung.
+        // Eigener Schalter (0.6.1): Ein Produkt mit eigenen Freigabe-Seiten
+        // (AI Brain bis F52c) schaltet sie aus, ohne die JSON-Schiene zu verlieren.
+        'oeffentlich_an' => (bool) env('VAULT_ROUTEN_OEFFENTLICH', true),
+        // Benannte Drossel fuer das Entsperren (Passwort raten). Gibt es den
+        // Begrenzer im Produkt nicht, meldet das Paket ihn mit 10/min je IP an —
+        // so wirkt er wie das fruehere `throttle:10,1`.
+        'drossel_entsperren' => 'vault-entsperren',
         'oeffentlich_praefix' => 'vault/geteilt',
         'oeffentlich_middleware' => ['web'],
     ],

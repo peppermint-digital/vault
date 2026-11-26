@@ -59,6 +59,15 @@ In jedem Produkt sieht die Vault-Leiste gleich aus, Vorbild ist AI Brain. Die Le
   - **Nicht erreichbar:** Antwortet die Quelle nicht, steht das als Hinweis da, statt einer leeren Liste.
   - **Ausgeblendet**, weil der Speicher nicht dem Vault gehört: Versionen, Papierkorb, Freigaben, Suche, Vorschaubilder, EuroOffice und PDF-Anmerkungen. Gelöschtes ist dort sofort weg.
 
+- **Slots für Produkte** (0.6.1): alle optional; ohne Belegung verhält sich der Browser wie vorher.
+  - `EditorSlot` enthält zusätzlich `scope` und `darfSchreiben`. Damit kann der Editor eines Produkts etwa Bilder selbst einfügen.
+  - `renderDateiAktionen({ pfad, scope, darfSchreiben })`: Knöpfe rechts in der Kopfzeile einer Datei, etwa „Großansicht“.
+  - `onDateiGeoeffnet(pfad)`: wird je geöffneter Datei einmal gerufen, auch beim Start über `startPfad`. Gedacht für Präsenz.
+  - `renderBaumMarke({ pfad, art })`: etwas rechts an jedem Eintrag im Baum, vor dem ⋮, etwa die Köpfe der Bearbeitenden. Gibt es an `Ordnerbaum` und am `VaultBrowser`.
+- **Öffentliche Schiene** (0.6.1):
+  - `vault.routen.oeffentlich_an` (Vorgabe `true`) schaltet `vault/geteilt/{token}/…` allein ab.
+  - Das Entsperren nutzt die **benannte** Drossel `vault.routen.drossel_entsperren` (Vorgabe `vault-entsperren`). Fehlt der Begrenzer im Produkt, meldet ihn das Paket mit 10 pro Minute je IP an; das wirkt wie das frühere `throttle:10,1`.
+
 ## JSON-Schiene
 
 Unter `vault.routen.praefix` (Vorgabe `vault/api`), Middleware `web` + `auth`. Abschalten mit `VAULT_ROUTEN=false`, wenn ein Produkt seine eigenen Controller behält.

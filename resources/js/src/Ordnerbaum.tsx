@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight, Download, Eye, FilePlus, FileText, Folder, FolderOpen, FolderPlus, MoreVertical, Pencil, Trash2, Upload } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import type { Baumeintrag } from './typen';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { cn } from './ui/utils';
@@ -37,6 +37,8 @@ export interface OrdnerbaumProps {
      * (`children` fehlt). Fuer externe Quellen, die ebenenweise laden (0.6.0).
      */
     onOrdnerOeffnen?: (pfad: string) => void;
+    /** Etwas rechts am Eintrag, vor dem ⋮ (0.6.1) — z. B. wer die Datei gerade bearbeitet. */
+    renderBaumMarke?: (slot: { pfad: string; art: 'datei' | 'ordner' }) => ReactNode;
 }
 
 const PRAEFIX = 'peppermint-vault-offen:';
@@ -165,6 +167,7 @@ function Eintrag(props: EintragProps) {
                     </button>
                 )}
 
+                {props.renderBaumMarke && <span className="flex shrink-0 items-center">{props.renderBaumMarke({ pfad: knoten.path, art: istOrdner ? 'ordner' : 'datei' })}</span>}
                 {hatMenue && (
                     <DropdownMenu>
                         <DropdownMenuTrigger

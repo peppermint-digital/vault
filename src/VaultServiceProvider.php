@@ -2,7 +2,10 @@
 
 namespace Peppermint\Vault;
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Peppermint\Vault\Bereichsnamen\StandardNamen;
@@ -93,10 +96,17 @@ class VaultServiceProvider extends ServiceProvider
                     ->group(__DIR__.'/../routes/quellen.php');
             }
 
-            Route::prefix((string) config('vault.routen.oeffentlich_praefix', 'vault/geteilt'))
-                ->middleware((array) config('vault.routen.oeffentlich_middleware', ['web']))
-                ->name((string) config('vault.routen.name', 'vault.api.').'geteilt.')
-                ->group(__DIR__.'/../routes/oeffentlich.php');
+            if (config('vault.routen.oeffentlich_an', true)) {
+                $begrenzer = (string) config('vault.routen.drossel_entsperren', 'vault-entsperren');
+                if (RateLimiter::limiter($begrenzer) === null) {
+                    RateLimiter::for($begrenzer, fn (Request $anfrage) => Limit::perMinute(10)->by((string) $anfrage->ip()));
+                }
+
+                Route::prefix((string) config('vault.routen.oeffentlich_praefix', 'vault/geteilt'))
+                    ->middleware((array) config('vault.routen.oeffentlich_middleware', ['web']))
+                    ->name((string) config('vault.routen.name', 'vault.api.').'geteilt.')
+                    ->group(__DIR__.'/../routes/oeffentlich.php');
+            }
         }
 
         /*

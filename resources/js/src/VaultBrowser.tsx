@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type
 import { AnlegenDialog } from './AnlegenDialog';
 import { Dateiansicht, type DateiansichtProps, type EditorSlot } from './Dateiansicht';
 import { FreigabeDialog } from './FreigabeDialog';
-import { Ordnerbaum } from './Ordnerbaum';
+import { Ordnerbaum, type OrdnerbaumProps } from './Ordnerbaum';
 import { Papierkorbliste } from './Papierkorbliste';
 import { fuerQuelle, istQuellenScope, type Bereichsangabe, type VaultApi } from './transport';
 import type { Baumeintrag, Suchtreffer } from './typen';
@@ -36,12 +36,18 @@ export interface VaultBrowserProps {
     euroOffice?: boolean;
     /** PDFs anmerken: PdfAnnotator aus `@peppermint-digital/vault/anmerken` einsetzen. */
     renderPdf?: DateiansichtProps['renderPdf'];
+    /** Knoepfe des Produkts rechts in der Kopfzeile einer Datei (0.6.1), z. B. „Grossansicht". */
+    renderDateiAktionen?: (slot: { pfad: string; scope: string; darfSchreiben: boolean }) => ReactNode;
+    /** Eine Datei wurde geoeffnet — per Klick, Suche, Anlegen oder ueber `startPfad` (0.6.1). */
+    onDateiGeoeffnet?: (pfad: string) => void;
+    /** Etwas rechts an jedem Eintrag im Baum (0.6.1), z. B. Koepfe der Bearbeitenden. */
+    renderBaumMarke?: OrdnerbaumProps['renderBaumMarke'];
 }
 
 type Seitenleiste = 'ansicht' | 'versionen' | 'papierkorb';
 type Dialogzustand = { art: 'datei' | 'ordner' | 'umbenennen'; ausgang: string } | null;
 
-export function VaultBrowser({ api: grundApi, scope, startPfad = '', onPfadGewechselt, renderEditor, renderAnsicht, bestaetigen, euroOffice, renderPdf }: VaultBrowserProps) {
+export function VaultBrowser({ api: grundApi, scope, startPfad = '', onPfadGewechselt, renderEditor, renderAnsicht, bestaetigen, euroOffice, renderPdf, renderDateiAktionen, onDateiGeoeffnet, renderBaumMarke }: VaultBrowserProps) {
     // Externe Quelle (0.6.0): dieselben Bausteine, aber ueber `quelle/*`,
     // Baum ebenenweise, ohne Versionen, Papierkorb, Freigaben und Suche.
     const quelle = istQuellenScope(scope);
@@ -174,6 +180,14 @@ export function VaultBrowser({ api: grundApi, scope, startPfad = '', onPfadGewec
     const darfSchreiben = bereich?.darfSchreiben ?? false;
     const istDatei = pfad !== '' && !(baum && istOrdnerIn(baum, pfad));
 
+    const gemeldet = useRef('');
+    useEffect(() => {
+        if (baum !== null && istDatei && gemeldet.current !== pfad) {
+            gemeldet.current = pfad;
+            onDateiGeoeffnet?.(pfad);
+        }
+    }, [baum, istDatei, pfad, onDateiGeoeffnet]);
+
     return (
         <div className="flex h-full min-h-[60vh] flex-col gap-3 md:flex-row">
             <aside className="flex w-full shrink-0 flex-col gap-2 md:w-72">
@@ -243,6 +257,7 @@ export function VaultBrowser({ api: grundApi, scope, startPfad = '', onPfadGewec
                             onHerunterladen={(p) => globalThis.open(api.rohUrl(scope, p, true), '_blank')}
                             vorschauUrl={(p) => (!quelle && /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(p) ? api.vorschauUrl(scope, p) : null)}
                             onOrdnerOeffnen={quelle ? ebeneLaden : undefined}
+                            renderBaumMarke={renderBaumMarke}
                         />
                     )}
                 </div>
@@ -289,6 +304,7 @@ export function VaultBrowser({ api: grundApi, scope, startPfad = '', onPfadGewec
                                     <Share2 /> Freigeben
                                 </Button>
                             )}
+                            {renderDateiAktionen && <div className="ml-auto flex items-center gap-1">{renderDateiAktionen({ pfad, scope, darfSchreiben })}</div>}
                         </div>
                         {ansicht === 'versionen' ? (
                             <div className="p-4">

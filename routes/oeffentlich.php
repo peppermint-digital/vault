@@ -10,7 +10,7 @@ use Peppermint\Vault\Http\Controllers\OeffentlicheFreigabeController;
  */
 Route::get('{token}/info', [OeffentlicheFreigabeController::class, 'info'])->name('info');
 Route::post('{token}/entsperren', [OeffentlicheFreigabeController::class, 'entsperren'])
-    ->middleware('throttle:10,1')
+    ->middleware('throttle:'.config('vault.routen.drossel_entsperren', 'vault-entsperren'))
     ->name('entsperren');
 Route::get('{token}/roh/{unterpfad?}', [OeffentlicheFreigabeController::class, 'roh'])
     ->where('unterpfad', '.*')

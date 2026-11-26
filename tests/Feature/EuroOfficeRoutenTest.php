@@ -2,6 +2,7 @@
 
 use Illuminate\Routing\RouteCollection;
 use Illuminate\Routing\RouteCollectionInterface;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Peppermint\Vault\VaultServiceProvider;
 
@@ -74,4 +75,31 @@ it('nimmt als Drossel auch eine Liste und laesst Leeres weg', function () {
     $routen = routenMit(['vault.eurooffice.drossel' => ['throttle:eurooffice', '', 'eurooffice.log']]);
 
     expect($routen->getByName('vault.api.eurooffice.rueckweg')->gatherMiddleware())->toBe(['throttle:eurooffice', 'eurooffice.log']);
+});
+
+/*
+ * 0.6.1 (AI Brain F52, Riegel J2): Die oeffentliche Schiene ist eigens
+ * schaltbar, und das Entsperren nutzt eine BENANNTE Drossel.
+ */
+it('legt die oeffentliche Schiene mit benannter Entsperr-Drossel an und meldet den Begrenzer an', function () {
+    $routen = routenMit([]);
+    $entsperren = $routen->getByName('vault.api.geteilt.entsperren');
+
+    expect($entsperren->uri())->toBe('vault/geteilt/{token}/entsperren')
+        ->and($entsperren->gatherMiddleware())->toContain('throttle:vault-entsperren')
+        ->and(collect($entsperren->gatherMiddleware())->contains(fn ($m) => preg_match('/^throttle:\d+,\d+$/', $m)))->toBeFalse()
+        ->and(RateLimiter::limiter('vault-entsperren'))->not->toBeNull();
+});
+
+it('nimmt den Namen der Drossel aus der Konfiguration', function () {
+    expect(routenMit(['vault.routen.drossel_entsperren' => 'produkt-entsperren'])->getByName('vault.api.geteilt.entsperren')->gatherMiddleware())
+        ->toContain('throttle:produkt-entsperren');
+});
+
+it('schaltet die oeffentliche Schiene allein ab, die JSON-Schiene bleibt', function () {
+    $routen = routenMit(['vault.routen.oeffentlich_an' => false]);
+
+    expect($routen->getByName('vault.api.geteilt.entsperren'))->toBeNull()
+        ->and($routen->getByName('vault.api.geteilt.info'))->toBeNull()
+        ->and($routen->getByName('vault.api.baum'))->not->toBeNull();
 });

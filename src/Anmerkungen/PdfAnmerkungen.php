@@ -75,8 +75,7 @@ class PdfAnmerkungen
         $absolut = $this->pdf($bereich, $pfad);
         $antwort = $this->ausfuehren($befehl, ['path' => $absolut] + $nutzlast);
 
-        $this->vault->versionen()->binaer($bereich, $pfad, $absolut, $autor ?? 'anmerkung');
-        $this->vault->kennung()->gespeichert($bereich, $pfad, $absolut);
+        $this->vault->amOrtGeaendert($bereich, $pfad, $autor ?? 'anmerkung');
 
         return $antwort;
     }

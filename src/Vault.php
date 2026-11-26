@@ -220,6 +220,25 @@ class Vault
     }
 
     /**
+     * Eine Binaerdatei wurde AM ORT geaendert (PDF-Anmerkungen: PyMuPDF schreibt
+     * in die Datei selbst). Legt die Binaerversion an und laeuft dann denselben
+     * Weg wie jedes Speichern: Kennung, Verweis-Cache, `DateiGespeichert`.
+     * Ohne diesen Weg saehen Index und Aktivitaet des Produkts die Aenderung nie.
+     */
+    public function amOrtGeaendert(Bereich $bereich, string $pfad, ?string $autor = null): string
+    {
+        $absolut = $this->ablage->aufloesen($bereich, $pfad);
+
+        if (! is_file($absolut)) {
+            throw new NotFoundHttpException('File not found.');
+        }
+
+        $this->versionen->binaer($bereich, $pfad, $absolut, $autor);
+
+        return $this->gespeichert($bereich, $pfad, $absolut, $autor);
+    }
+
+    /**
      * Hochladen — NIE ueberschreibend: Bei gleichem Namen wird angehaengt
      * (`name-1.pdf`). Gibt den relativen Pfad zurueck.
      */

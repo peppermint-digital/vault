@@ -23,11 +23,12 @@ Plan und Herkunft: `codingshare/vault-paket-plan-2026-11-26.md`. Der Kern ist au
 | Freigabelinks | `Models\VaultShare` |
 | HTML → Markdown (Umzug der Manager-Notizen) | `Umwandlung\HtmlZuMarkdown` |
 | JSON-Schiene für die Oberfläche | `routes/vault.php`, `Http\Controllers\*` |
+| MCP-Bausteine (lesen, auflisten, suchen, schreiben) | `Mcp\*` (mit `laravel/mcp`) |
 | Vorschaubilder, PDF/EPUB-Anmerkungen mit Spiegelung in den Steckbrief | `Vorschaubilder`, `Anmerkungen\*`, `scripts/pdf_annotations.py` |
 | EuroOffice: Konfiguration, Datei, Rückweg, Blankovorlagen | `EuroOffice\*`, `Http\Controllers\EuroOfficeController`, `stubs/office/` |
 | Oberfläche (npm) | `EuroOfficeEditor`, `GeteilteAnsicht`, `VaultBrowser`, `Ordnerbaum`, `Dateiansicht`, `Versionsliste`, `Papierkorbliste`, `FreigabeDialog`, `AnlegenDialog`, `vaultApi` |
 
-**Noch nicht drin, folgt:** externe Quellen (SMB), MCP-Bausteine und die Oberfläche für Anmerkungen (pdf.js/epub.js). Die Schiene dafür steht schon.
+**Noch nicht drin, folgt:** externe Quellen (SMB) und die Oberfläche für Anmerkungen (pdf.js/epub.js). Die Schiene dafür steht schon.
 
 ## JSON-Schiene
 
@@ -86,6 +87,14 @@ Je Produkt gibt es einen eigenen Document Server mit eigenem JWT-Geheimnis (F40)
 - `GET vault/api/vorschau`: Vorschaubild mit 320 px (JPEG über GD, SVG direkt). Abgelegt unter `vault.vorschau.pfad`, außerhalb der Disk. Der Ordnerbaum zeigt es bei Bildern.
 - `GET/POST/PATCH/DELETE vault/api/anmerkungen`: PDF-Anmerkungen über PyMuPDF (`vault.anmerkungen.python`; ohne Python antwortet die Schiene mit 503). EPUB-Anmerkungen liegen in einer Datei daneben (`<buch>.epub.annot.json`). Jede Änderung wird in den Steckbrief `<stamm>.md` gespiegelt. Ansehen verlangt Leserecht, Ändern Schreibrecht.
 - **Neu gegenüber AI Brain:** Nach jeder PDF-Änderung gibt es eine Binärversion, denn PyMuPDF schreibt in die Datei selbst. Außerdem gehen Anmerkungen auch in geteilten Bereichen (in AI Brain nur privat).
+
+## MCP-Bausteine
+
+Mit `laravel/mcp` gibt es vier abstrakte Werkzeuge: `VaultLesen`, `VaultAuflisten`, `VaultSuchen` und `VaultSchreiben`. Das Produkt leitet davon ab und setzt `$name` sowie `bereich()`. Dass Werkzeuge produktspezifisch benannt werden (Plan §5.4: `*-firmen-vault`), ist damit Sache des Produkts.
+
+- **Ohne angemeldete Person gibt es keine Antwort.** Der Rückfall auf einen globalen Bereich aus AI Brain fehlt bewusst (Plan, Falle 8).
+- Die Rechte laufen über `Vaultrechte`, wie in der Oberfläche.
+- `VaultSchreiben` schreibt mit `base_version` nie über eine inzwischen geänderte Fassung. Der Autor heißt in den Versionen „assistant für <Person>“.
 
 ## Verträge
 

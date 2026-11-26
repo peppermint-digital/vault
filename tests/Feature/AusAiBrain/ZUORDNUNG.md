@@ -24,7 +24,7 @@ Spalte **Wohin**:
 | EuroOfficeCallbackTest | Paket | AusAiBrain/EuroOfficeTest (plus Nachprüfung der Schreibrechte am Rückweg) |
 | VaultExterneQuelleTest | später | mit SMB-Quellen |
 | AnnotationControllerTest, PdfEpubAnnotationTest | Paket (Dienste und Schiene) / später (Annotator-Oberfläche) | AusAiBrain/AnmerkungenUndVorschauTest |
-| VaultDeleteMoveToolsTest, Mcp/VaultToolsAuthScopeTest, Mcp/WriteSharedNoteToolTest, SharedVaultMcpAccessTest | AI Brain, die bereichsneutralen Teile später | MCP-Bausteine |
+| VaultDeleteMoveToolsTest, Mcp/VaultToolsAuthScopeTest, Mcp/WriteSharedNoteToolTest, SharedVaultMcpAccessTest | AI Brain (Werkzeugnamen, Rückfall, Audit) / Paket (bereichsneutrale Bausteine) | McpWerkzeugeTest |
 | VaultInitOnUserCreatedTest | AI Brain | Persona und Startdateien hängen an `KontoAngelegt`; das Ereignis selbst prüft VaultTest |
 | OAuthClientVaultSpaceTest, ChannelVaultAccessTest, AvatarUserRestrictionTest, MandatoryChannelsProvisioningTest | AI Brain | Kanäle, Avatare, OAuth |
 | Plugins/* (Calendar, VaultTasks, Nutrition, Companion), Mail/MailErfassenSpeicherTest, AgentChatLoeschenTest, BrowserAdresseZuReverbTest, Riegel/NamenloseDrosselnTest, TestpfadeGehoerenDemLaufTest | AI Brain | nutzen den Vault nur als Ablage; nach V2 laufen sie über die Paket-Schnittstelle und sind damit der zweite Riegel |

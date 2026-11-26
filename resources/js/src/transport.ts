@@ -189,6 +189,10 @@ export function vaultApi(optionen: VaultApiOptionen) {
         anmerkungAendern: (scope: string, daten: Record<string, unknown> & { path: string }) => anfrage<Anmerkungsliste>('PATCH', 'anmerkungen', { scope }, daten),
         anmerkungEntfernen: (scope: string, daten: Record<string, unknown> & { path: string }) => anfrage<Anmerkungsliste>('DELETE', 'anmerkungen', { scope }, daten),
 
+        /** Externe Quelle (`extern:<slug>`): genau eine Ebene; `erreichbar: false` statt einer leeren Liste. */
+        quelleEbene: (scope: string, path = '') =>
+            anfrage<{ erreichbar: boolean; eintraege: Baumeintrag[] }>('GET', 'quelle/ebene', { scope, path }),
+
         freigaben: (scope: string, path: string) => anfrage<{ shares: Freigabe[] }>('GET', 'freigaben', { scope, path }),
         freigabeAnlegen: (scope: string, path: string, passwort?: string, tage?: number) =>
             anfrage<{ share: Freigabe }>('POST', 'freigaben', { scope }, { path, password: passwort || undefined, expires_in_days: tage }),

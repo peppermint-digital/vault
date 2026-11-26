@@ -6,7 +6,10 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Peppermint\Vault\Console\PapierkorbLeerenCommand;
 use Peppermint\Vault\Contracts\Benutzeradresse;
+use Peppermint\Vault\Contracts\Einhaengung;
 use Peppermint\Vault\Contracts\Vaultrechte;
+use Peppermint\Vault\Quellen\Geraetepruefung;
+use Peppermint\Vault\Quellen\Quellen;
 use Peppermint\Vault\Rechte\EmailAdresse;
 use Peppermint\Vault\Rechte\Standardrechte;
 use Peppermint\Vault\Verknuepfung\Verknuepfungen;
@@ -30,6 +33,8 @@ class VaultServiceProvider extends ServiceProvider
         // `bindIf`: Ein Produkt mit eigener Rechte- oder Adresslogik behaelt sie.
         $this->app->bindIf(Vaultrechte::class, Standardrechte::class, true);
         $this->app->bindIf(Benutzeradresse::class, EmailAdresse::class, true);
+        $this->app->bindIf(Einhaengung::class, Geraetepruefung::class, true);
+        $this->app->singleton(Quellen::class);
 
         $this->app->singleton(Ablage::class);
         $this->app->singleton(Dateikennung::class);
@@ -59,6 +64,13 @@ class VaultServiceProvider extends ServiceProvider
                 ->name((string) config('vault.routen.name', 'vault.api.'))
                 ->group(__DIR__.'/../routes/vault.php');
 
+            if (config('vault.quellen', false)) {
+                Route::prefix((string) config('vault.routen.praefix', 'vault/api'))
+                    ->middleware((array) config('vault.routen.middleware', ['web', 'auth']))
+                    ->name((string) config('vault.routen.name', 'vault.api.'))
+                    ->group(__DIR__.'/../routes/quellen.php');
+            }
+
             Route::prefix((string) config('vault.routen.oeffentlich_praefix', 'vault/geteilt'))
                 ->middleware((array) config('vault.routen.oeffentlich_middleware', ['web']))
                 ->name((string) config('vault.routen.name', 'vault.api.').'geteilt.')
@@ -87,6 +99,10 @@ class VaultServiceProvider extends ServiceProvider
 
         if (config('vault.run_migrations_neu', true)) {
             $this->loadMigrationsFrom(__DIR__.'/../database/migrations/neu');
+        }
+
+        if (config('vault.quellen', false) && config('vault.run_migrations', true)) {
+            $this->loadMigrationsFrom(__DIR__.'/../database/migrations/quellen');
         }
     }
 }

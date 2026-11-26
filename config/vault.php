@@ -52,6 +52,8 @@ return [
         'shares' => 'vault_shares',
         'files' => 'vault_files',
         'links' => 'vault_links',
+        'sources' => 'vault_sources',
+        'source_user' => 'vault_source_user',
     ],
 
     /*
@@ -64,6 +66,13 @@ return [
     'run_migrations_neu' => env('VAULT_RUN_MIGRATIONS_NEU', true),
 
     'user_model' => env('VAULT_USER_MODEL', 'App\\Models\\User'),
+
+    /*
+     | Externe Quellen (SMB-Freigaben, auf dem Host eingehaengt). Aus = es gibt
+     | weder Tabellen noch Wege noch Bereiche dafuer. Der Manager laesst sie
+     | aus (F39); AI Brain schaltet sie ein.
+     */
+    'quellen' => (bool) env('VAULT_QUELLEN', false),
 
     /*
      | Rechte. Das Paket fragt nur den Vertrag `Vaultrechte`; die

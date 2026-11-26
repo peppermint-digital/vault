@@ -23,12 +23,13 @@ Plan und Herkunft: `codingshare/vault-paket-plan-2026-11-26.md`. Der Kern ist au
 | Freigabelinks | `Models\VaultShare` |
 | HTML → Markdown (Umzug der Manager-Notizen) | `Umwandlung\HtmlZuMarkdown` |
 | JSON-Schiene für die Oberfläche | `routes/vault.php`, `Http\Controllers\*` |
+| Externe Quellen (SMB, nur mit `vault.quellen`) | `Quellen\*`, `Models\VaultSource`, Vertrag `Einhaengung` |
 | MCP-Bausteine (lesen, auflisten, suchen, schreiben) | `Mcp\*` (mit `laravel/mcp`) |
 | Vorschaubilder, PDF/EPUB-Anmerkungen mit Spiegelung in den Steckbrief | `Vorschaubilder`, `Anmerkungen\*`, `scripts/pdf_annotations.py` |
 | EuroOffice: Konfiguration, Datei, Rückweg, Blankovorlagen | `EuroOffice\*`, `Http\Controllers\EuroOfficeController`, `stubs/office/` |
 | Oberfläche (npm) | `EuroOfficeEditor`, `GeteilteAnsicht`, `VaultBrowser`, `Ordnerbaum`, `Dateiansicht`, `Versionsliste`, `Papierkorbliste`, `FreigabeDialog`, `AnlegenDialog`, `vaultApi` |
 
-**Noch nicht drin, folgt:** externe Quellen (SMB) und die Oberfläche für Anmerkungen (pdf.js/epub.js). Die Schiene dafür steht schon.
+**Noch nicht drin, folgt:** die Oberfläche für Anmerkungen (pdf.js/epub.js) und das ebenenweise Nachladen externer Quellen im Ordnerbaum. Die Schiene für beides steht schon.
 
 ## JSON-Schiene
 
@@ -87,6 +88,15 @@ Je Produkt gibt es einen eigenen Document Server mit eigenem JWT-Geheimnis (F40)
 - `GET vault/api/vorschau`: Vorschaubild mit 320 px (JPEG über GD, SVG direkt). Abgelegt unter `vault.vorschau.pfad`, außerhalb der Disk. Der Ordnerbaum zeigt es bei Bildern.
 - `GET/POST/PATCH/DELETE vault/api/anmerkungen`: PDF-Anmerkungen über PyMuPDF (`vault.anmerkungen.python`; ohne Python antwortet die Schiene mit 503). EPUB-Anmerkungen liegen in einer Datei daneben (`<buch>.epub.annot.json`). Jede Änderung wird in den Steckbrief `<stamm>.md` gespiegelt. Ansehen verlangt Leserecht, Ändern Schreibrecht.
 - **Neu gegenüber AI Brain:** Nach jeder PDF-Änderung gibt es eine Binärversion, denn PyMuPDF schreibt in die Datei selbst. Außerdem gehen Anmerkungen auch in geteilten Bereichen (in AI Brain nur privat).
+
+## Externe Quellen
+
+Nur mit `vault.quellen` (`VAULT_QUELLEN=true`); der Manager lässt das aus (F39). Eine Quelle ist eine auf dem Host eingehängte Freigabe und wird im Bereich `source:{slug}` angesprochen, in Anfragen als `?scope=extern:<slug>`.
+
+- **Fremder Speicher:** keine Versionen, kein Papierkorb, keine Datei-IDs, kein Index. Löschen löscht wirklich. Der Baum kommt ebenenweise (`GET vault/api/quelle/ebene`).
+- **Einhängung:** Ein nicht eingehängter Pfad sieht aus wie ein leeres Verzeichnis. Deshalb prüft jede Operation die Einhängung über den Vertrag `Einhaengung`; die Vorgabe vergleicht die Geräte-Kennung mit dem Elternverzeichnis. Ohne Einhängung wird nichts gelesen und nichts geschrieben, auch wenn sie mitten in einer Anfrage wegbricht. Die Schiene meldet dann `erreichbar: false` statt einer leeren Liste.
+- **Rechte:** Lesen dürfen nur Mitglieder, auch Verwalter nicht automatisch. Schreiben darf `editor`, und nur solange die Quelle eingehängt ist.
+- **Sperre:** Die normale Ablage nimmt keinen Quellen-Bereich an. Sonst entstünde ein Ordner gleichen Namens auf der eigenen Platte.
 
 ## MCP-Bausteine
 

@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Peppermint\Vault\Bereich;
 use Peppermint\Vault\Contracts\Vaultrechte;
+use Peppermint\Vault\Models\VaultSource;
 use Peppermint\Vault\Models\VaultSpace;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -28,9 +29,12 @@ class Bereichswahl
         $user = $this->person($request);
         $slug = trim((string) ($request->query('scope') ?? $request->input('scope', '')));
 
-        $bereich = $slug === '' || $slug === 'private'
-            ? Bereich::person((int) $user->getAuthIdentifier())
-            : $this->raum($slug);
+        // `extern:` vorne, damit eine Quelle nie mit einem Raum gleichen Namens verwechselt wird (wie AI Brain).
+        $bereich = match (true) {
+            $slug === '' || $slug === 'private' => Bereich::person((int) $user->getAuthIdentifier()),
+            str_starts_with($slug, 'extern:') => $this->quelle(substr($slug, 7)),
+            default => $this->raum($slug),
+        };
 
         if (! $this->rechte->darfLesen($user, $bereich)) {
             throw new NotFoundHttpException;
@@ -64,6 +68,10 @@ class Bereichswahl
             return 'private';
         }
 
+        if ($bereich->istQuelle()) {
+            return 'extern:'.$bereich->schluessel;
+        }
+
         $raum = $bereich->istGleich(Bereich::global())
             ? VaultSpace::query()->where('is_global', true)->first()
             : VaultSpace::query()->where('is_global', false)->get()->first(fn (VaultSpace $r) => $r->bereich()->istGleich($bereich));
@@ -75,7 +83,9 @@ class Bereichswahl
     public function beschreibung(Request $request, Bereich $bereich): array
     {
         $raum = null;
-        if (! $bereich->istPersoenlich()) {
+        if ($bereich->istQuelle()) {
+            $raum = VaultSource::query()->where('slug', $bereich->schluessel)->first();
+        } elseif (! $bereich->istPersoenlich()) {
             $slug = $this->slug($bereich);
             $raum = VaultSpace::query()->where('slug', $slug)->first();
         }
@@ -86,6 +96,19 @@ class Bereichswahl
             'persoenlich' => $bereich->istPersoenlich(),
             'darfSchreiben' => $this->rechte->darfSchreiben($this->person($request), $bereich),
         ];
+    }
+
+    private function quelle(string $slug): Bereich
+    {
+        if (! config('vault.quellen', false)) {
+            throw new NotFoundHttpException;
+        }
+
+        try {
+            return Bereich::quelle($slug);
+        } catch (\InvalidArgumentException) {
+            throw new NotFoundHttpException;
+        }
     }
 
     private function raum(string $slug): Bereich

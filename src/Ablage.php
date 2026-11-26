@@ -28,6 +28,14 @@ class Ablage
     /** Basisverzeichnis eines Bereichs (wird bei Bedarf angelegt). */
     public function basis(Bereich $bereich): string
     {
+        // Eine Quelle liegt NICHT auf der Disk. Liefe sie hier durch, entstuende
+        // ein Ordner `<slug>` auf der eigenen Platte — genau der begrabene
+        // Upload, den die Einhaengepruefung verhindern soll. Quellen gehen nur
+        // ueber {@see Quellen\Quellen}.
+        if ($bereich->istQuelle()) {
+            throw new \LogicException('Eine externe Quelle laeuft nicht ueber die Ablage.');
+        }
+
         return $this->wurzel().DIRECTORY_SEPARATOR.$bereich->ordner();
     }
 

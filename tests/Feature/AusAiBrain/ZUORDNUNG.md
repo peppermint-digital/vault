@@ -14,7 +14,7 @@ Spalte **Wohin**:
 | VaultVersionsTest | Paket | AusAiBrain/VaultVersionenTest, HttpTest |
 | VaultVersioningTest | Paket | AusAiBrain/VaultVersionenTest, VaultTest |
 | VaultBinaryVersionTest | Paket | AusAiBrain/VaultVersionenTest, VaultTest |
-| VaultTextWegSchreibtKeineBinaerdateiTest | Paket | AusAiBrain/VaultTextwegTest (ohne den Fall „externe Quelle“, siehe SMB) |
+| VaultTextWegSchreibtKeineBinaerdateiTest | Paket | AusAiBrain/VaultTextwegTest (den Fall „externe Quelle“ trägt Quellen/ExterneQuelleTest) |
 | VaultVerborgeneWurzeldateienTest | Paket | AusAiBrain/VaultTextwegTest, VaultTest |
 | VaultSpaceTest | Paket (Rechte und Trennung) / AI Brain (Räume anlegen und verwalten, Seed des globalen Raums) | AusAiBrain/VaultRaeumeUndSchieneTest, RechteTest |
 | VaultUnifiedTest | Paket (JSON-Schiene) / AI Brain (Inertia-Seite, Scope-Tabs, Vorschläge) | AusAiBrain/VaultRaeumeUndSchieneTest, HttpTest |
@@ -22,7 +22,7 @@ Spalte **Wohin**:
 | SharedVaultTest | AI Brain | Altbau `SharedVaultController`, entfällt in V6 |
 | VaultOfficeDateiAnlegenTest | Paket | AusAiBrain/EuroOfficeTest |
 | EuroOfficeCallbackTest | Paket | AusAiBrain/EuroOfficeTest (plus Nachprüfung der Schreibrechte am Rückweg) |
-| VaultExterneQuelleTest | später | mit SMB-Quellen |
+| VaultExterneQuelleTest | Paket (Einhängung, Rechte, Ebenen, Schiene) / AI Brain (Quellen eintragen, Mitglieder verwalten, Reiter) | Quellen/ExterneQuelleTest |
 | AnnotationControllerTest, PdfEpubAnnotationTest | Paket (Dienste und Schiene) / später (Annotator-Oberfläche) | AusAiBrain/AnmerkungenUndVorschauTest |
 | VaultDeleteMoveToolsTest, Mcp/VaultToolsAuthScopeTest, Mcp/WriteSharedNoteToolTest, SharedVaultMcpAccessTest | AI Brain (Werkzeugnamen, Rückfall, Audit) / Paket (bereichsneutrale Bausteine) | McpWerkzeugeTest |
 | VaultInitOnUserCreatedTest | AI Brain | Persona und Startdateien hängen an `KontoAngelegt`; das Ereignis selbst prüft VaultTest |

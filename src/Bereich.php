@@ -58,7 +58,25 @@ final class Bereich
         return self::geteilt(trim((string) config('vault.bereiche.raeume', '_spaces'), '/').'/'.$slug);
     }
 
-    /** Aus `user:{id}` oder `area:{key}`. */
+    /**
+     * Eine extern angebundene Quelle (AI Brain #6221), Schluessel `source:{slug}`
+     * wie dort. Fremder Speicher: keine Versionen, kein Papierkorb, kein Index.
+     */
+    public static function quelle(string $slug): self
+    {
+        if ($slug === '' || ! preg_match('/^[a-z0-9][a-z0-9_-]*$/', $slug)) {
+            throw new InvalidArgumentException('Ungueltige Quelle.');
+        }
+
+        return new self('source', $slug);
+    }
+
+    public function istQuelle(): bool
+    {
+        return $this->typ === 'source';
+    }
+
+    /** Aus `user:{id}`, `area:{key}` oder `source:{slug}`. */
     public static function aus(string $scope): self
     {
         [$typ, $key] = array_pad(explode(':', $scope, 2), 2, '');
@@ -66,6 +84,7 @@ final class Bereich
         return match ($typ) {
             'user' => ctype_digit($key) ? self::person((int) $key) : throw new InvalidArgumentException("Unbekannter Bereich: {$scope}"),
             'area' => self::geteilt($key),
+            'source' => self::quelle($key),
             default => throw new InvalidArgumentException("Unbekannter Bereich: {$scope}"),
         };
     }

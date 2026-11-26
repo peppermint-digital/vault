@@ -160,6 +160,15 @@ return [
         'max_kb' => (int) env('VAULT_UPLOAD_MAX_KB', 51200),
     ],
 
+    /*
+     | Was die Oberflaeche als Ueberschrift eines Bereichs zeigt. Raeume und
+     | Quellen tragen ihren eigenen Namen; der persoenliche Bereich heisst je
+     | Produkt anders (AI Brain „Privat", Manager „Mein Arbeits-Vault").
+     */
+    'bezeichnungen' => [
+        'persoenlich' => 'Persönlich',
+    ],
+
     'suche' => [
         // Vorne an jeden Treffer-Pfad; die Seite gehoert dem Produkt.
         'url_praefix' => '/notes?path=',

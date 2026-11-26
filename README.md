@@ -141,6 +141,7 @@ app(StandardNamen::class)->praefix('objekt:',
 - Rechte entscheidet weiter `Vaultrechte`.
 - Ein unbekannter Name gibt wie ein fremder Bereich 404.
 - Präfixe enden mit `:`, damit kein Raum sie überdecken kann. `extern:` ist eingebaut und lässt sich nicht überschreiben.
+- Die Überschrift des persönlichen Bereichs setzt das Produkt über `vault.bezeichnungen.persoenlich`. Vorgabe ist „Persönlich“, der Manager nimmt „Mein Arbeits-Vault“.
 
 ## Fassungen übernehmen (0.3.0)
 

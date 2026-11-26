@@ -100,5 +100,12 @@ it('nennt die eingebauten Bereiche wie bisher', function () {
         ->and($namen->name(Bereich::raum('team')))->toBe('team')
         ->and($namen->bezeichnung(Bereich::raum('team')))->toBe('Team')
         ->and($namen->aus('', $person)->scope())->toBe('user:'.$person->id)
-        ->and($namen->aus('extern:x', $person))->toBeNull();
+        ->and($namen->aus('extern:x', $person))->toBeNull()
+        ->and($namen->bezeichnung(Bereich::person(3)))->toBe('Persönlich');
+});
+
+it('laesst das Produkt den persoenlichen Bereich selbst benennen', function () {
+    config(['vault.bezeichnungen.persoenlich' => 'Mein Arbeits-Vault']);
+
+    expect(app(Bereichsnamen::class)->bezeichnung(Bereich::person(3)))->toBe('Mein Arbeits-Vault');
 });

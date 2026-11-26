@@ -87,7 +87,8 @@ class StandardNamen implements Bereichsnamen
     public function bezeichnung(Bereich $bereich): string
     {
         if ($bereich->istPersoenlich()) {
-            return 'Persoenlich';
+            // Ueberschreibbar, weil jedes Produkt den Bereich anders nennt (Manager: „Mein Arbeits-Vault").
+            return (string) config('vault.bezeichnungen.persoenlich', 'Persönlich');
         }
 
         if ($bereich->istQuelle()) {

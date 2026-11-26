@@ -16,7 +16,9 @@ import { cn } from './ui/utils';
  * mehrere Bereiche gibt es nicht — so entsteht nie ein Knoten aus einem
  * Bereich, den die Person nicht lesen darf.
  *
- * Seite, Layout und Bereichswahl gehoeren dem Produkt (`Bereichsreiter`).
+ * Aussehen wie in AI Brain (Werkzeugleiste, Hover-Kasten unten links,
+ * Legende unten rechts). Seite, Layout und Bereichswahl gehoeren dem Produkt
+ * (`Bereichsreiter`).
  */
 export interface VerweisGraphProps {
     api: VaultApi;
@@ -299,6 +301,37 @@ export function VerweisGraph({ api, scope, aktuellerPfad = '', onOeffnen, classN
                                 {ueber.linkCount} {ueber.linkCount === 1 ? 'eingehender Verweis' : 'eingehende Verweise'}
                             </p>
                         )}
+                    </div>
+                )}
+
+                {graph && graph.nodes.length > 0 && (
+                    <div className="pointer-events-none absolute right-4 bottom-4 flex flex-col gap-1.5 rounded-md border bg-popover px-3 py-2 text-xs text-muted-foreground shadow-md">
+                        <div className="flex items-center gap-2">
+                            <span className="inline-block h-3 w-3 rounded-full bg-primary" />
+                            Aktuelle Notiz
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span
+                                className="inline-block h-3 w-3 rounded-full"
+                                style={{ background: 'linear-gradient(135deg, hsl(217,75%,60%), hsl(142,60%,45%), hsl(280,60%,60%))' }}
+                            />
+                            Farbe = Ordner
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="inline-block h-3 w-3 rounded-full bg-muted-foreground/50" />
+                            <span>Markdown</span>
+                            <span className="ml-2 inline-block h-3 w-3 rounded-[2px] bg-muted-foreground/50" />
+                            <span>HTML</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px]">⬤ groß</span>
+                            Viele eingehende Verweise
+                        </div>
+                        <p className="mt-1 border-t pt-1">
+                            Klick → Notiz öffnen
+                            <br />
+                            Ziehen → Position fixieren
+                        </p>
                     </div>
                 )}
             </div>

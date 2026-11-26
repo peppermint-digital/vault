@@ -64,6 +64,11 @@ In jedem Produkt sieht die Vault-Leiste gleich aus, Vorbild ist AI Brain. Die Le
   - `renderDateiAktionen({ pfad, scope, darfSchreiben })`: Knöpfe rechts in der Kopfzeile einer Datei, etwa „Großansicht“.
   - `onDateiGeoeffnet(pfad)`: wird je geöffneter Datei einmal gerufen, auch beim Start über `startPfad`. Gedacht für Präsenz.
   - `renderBaumMarke({ pfad, art })`: etwas rechts an jedem Eintrag im Baum, vor dem ⋮, etwa die Köpfe der Bearbeitenden. Gibt es an `Ordnerbaum` und am `VaultBrowser`.
+- **Hochladen** (0.6.2, aus AI Brain):
+  - Dateien lassen sich auf den Baum ziehen. Sie landen im offenen Ordner, bei offener Datei in deren Ordner. Gezogene Ordner werden übersprungen.
+  - „Ordner hochladen“ gibt es oben und im ⋮ eines Ordners. Unterordner bleiben erhalten.
+  - Hochgeladen wird nacheinander; der Server legt fehlende Ordner selbst an.
+  - Ohne Schreibrecht gibt es weder Ablage noch Knopf.
 - **Öffentliche Schiene** (0.6.1):
   - `vault.routen.oeffentlich_an` (Vorgabe `true`) schaltet `vault/geteilt/{token}/…` allein ab.
   - Das Entsperren nutzt die **benannte** Drossel `vault.routen.drossel_entsperren` (Vorgabe `vault-entsperren`). Fehlt der Begrenzer im Produkt, meldet ihn das Paket mit 10 pro Minute je IP an; das wirkt wie das frühere `throttle:10,1`.

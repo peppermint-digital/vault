@@ -1,14 +1,16 @@
-import { FilePlus, FolderPlus, History, Search, Share2, Trash2, Upload } from 'lucide-react';
+import { FilePlus, FolderPlus, FolderUp, History, Search, Share2, Trash2, Upload } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { AnlegenDialog } from './AnlegenDialog';
 import { Dateiansicht, type DateiansichtProps, type EditorSlot } from './Dateiansicht';
 import { FreigabeDialog } from './FreigabeDialog';
+import { gezogenePosten, ordnerPosten, type Hochladeposten } from './hochladen';
 import { Ordnerbaum, type OrdnerbaumProps } from './Ordnerbaum';
 import { Papierkorbliste } from './Papierkorbliste';
 import { fuerQuelle, istQuellenScope, type Bereichsangabe, type VaultApi } from './transport';
 import type { Baumeintrag, Suchtreffer } from './typen';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { cn } from './ui/utils';
 import { Versionsliste } from './Versionsliste';
 
 /**
@@ -45,9 +47,25 @@ export interface VaultBrowserProps {
 }
 
 type Seitenleiste = 'ansicht' | 'versionen' | 'papierkorb';
-type Dialogzustand = { art: 'datei' | 'ordner' | 'umbenennen'; ausgang: string } | null;
+type Dialogzustand = {
+    art: 'datei' | 'ordner' | 'umbenennen';
+    ausgang: string;
+} | null;
 
-export function VaultBrowser({ api: grundApi, scope, startPfad = '', onPfadGewechselt, renderEditor, renderAnsicht, bestaetigen, euroOffice, renderPdf, renderDateiAktionen, onDateiGeoeffnet, renderBaumMarke }: VaultBrowserProps) {
+export function VaultBrowser({
+    api: grundApi,
+    scope,
+    startPfad = '',
+    onPfadGewechselt,
+    renderEditor,
+    renderAnsicht,
+    bestaetigen,
+    euroOffice,
+    renderPdf,
+    renderDateiAktionen,
+    onDateiGeoeffnet,
+    renderBaumMarke,
+}: VaultBrowserProps) {
     // Externe Quelle (0.6.0): dieselben Bausteine, aber ueber `quelle/*`,
     // Baum ebenenweise, ohne Versionen, Papierkorb, Freigaben und Suche.
     const quelle = istQuellenScope(scope);
@@ -65,6 +83,8 @@ export function VaultBrowser({ api: grundApi, scope, startPfad = '', onPfadGewec
     const [ladeschluessel, setLadeschluessel] = useState(0);
     const hochladenFeld = useRef<HTMLInputElement>(null);
     const hochladenOrdner = useRef('');
+    const ordnerFeld = useRef<HTMLInputElement>(null);
+    const [ziehen, setZiehen] = useState(false);
 
     const neuLaden = useCallback(() => setLadeschluessel((n) => n + 1), []);
     const frage = bestaetigen ?? ((f: string) => globalThis.confirm(f));
@@ -77,7 +97,14 @@ export function VaultBrowser({ api: grundApi, scope, startPfad = '', onPfadGewec
                 .then((d) => {
                     if (ab) return;
                     setNichtErreichbar(!d.erreichbar);
-                    setBereich(d.bereich ?? { slug: scope, label: scope.slice('extern:'.length), persoenlich: false, darfSchreiben: false });
+                    setBereich(
+                        d.bereich ?? {
+                            slug: scope,
+                            label: scope.slice('extern:'.length),
+                            persoenlich: false,
+                            darfSchreiben: false,
+                        },
+                    );
                     setBaum(d.eintraege);
                     setFehler(null);
                 })
@@ -164,6 +191,27 @@ export function VaultBrowser({ api: grundApi, scope, startPfad = '', onPfadGewec
         hochladenFeld.current?.click();
     }
 
+    function ordnerHochladenStarten(ordner: string) {
+        hochladenOrdner.current = ordner;
+        ordnerFeld.current?.click();
+    }
+
+    /** Nacheinander, nicht parallel: ein Ordner mit hundert Dateien soll den Server nicht fluten. */
+    function postenHochladen(posten: Hochladeposten[]) {
+        if (posten.length === 0) {
+            return;
+        }
+        void ausfuehren(async () => {
+            let letzter = '';
+            for (const p of posten) {
+                letzter = (await api.hochladen(scope, p.datei, p.ordner)).path;
+            }
+            if (posten.length === 1) {
+                oeffnen(letzter);
+            }
+        });
+    }
+
     async function suchen(e: FormEvent) {
         e.preventDefault();
         if (suche.trim() === '') {
@@ -179,6 +227,8 @@ export function VaultBrowser({ api: grundApi, scope, startPfad = '', onPfadGewec
 
     const darfSchreiben = bereich?.darfSchreiben ?? false;
     const istDatei = pfad !== '' && !(baum && istOrdnerIn(baum, pfad));
+    /** Wohin Gezogenes faellt: in den offenen Ordner, bei offener Datei in deren Ordner. */
+    const ablageOrdner = istDatei ? ordnerVon(pfad) : pfad;
 
     const gemeldet = useRef('');
     useEffect(() => {
@@ -204,6 +254,9 @@ export function VaultBrowser({ api: grundApi, scope, startPfad = '', onPfadGewec
                             <Button size="icon" variant="ghost" aria-label="Datei hochladen" title="Datei hochladen" onClick={() => hochladenStarten('')}>
                                 <Upload />
                             </Button>
+                            <Button size="icon" variant="ghost" aria-label="Ordner hochladen" title="Ordner hochladen" onClick={() => ordnerHochladenStarten('')}>
+                                <FolderUp />
+                            </Button>
                         </div>
                     )}
                 </div>
@@ -227,7 +280,25 @@ export function VaultBrowser({ api: grundApi, scope, startPfad = '', onPfadGewec
                     </p>
                 )}
 
-                <div className="min-h-0 flex-1 overflow-auto rounded-md border">
+                <div
+                    className={cn('min-h-0 flex-1 overflow-auto rounded-md border', ziehen && 'border-primary bg-primary/5')}
+                    data-ablage={darfSchreiben ? '' : undefined}
+                    onDragOver={(e) => {
+                        if (darfSchreiben && e.dataTransfer.types.includes('Files')) {
+                            e.preventDefault();
+                            setZiehen(true);
+                        }
+                    }}
+                    onDragLeave={() => setZiehen(false)}
+                    onDrop={(e) => {
+                        if (!darfSchreiben || !e.dataTransfer.types.includes('Files')) {
+                            return;
+                        }
+                        e.preventDefault();
+                        setZiehen(false);
+                        postenHochladen(gezogenePosten(ablageOrdner, e.dataTransfer));
+                    }}
+                >
                     {treffer !== null ? (
                         <ul className="divide-y" aria-label="Suchergebnisse">
                             {treffer.length === 0 && <li className="p-3 text-sm text-muted-foreground">Nichts gefunden.</li>}
@@ -252,6 +323,7 @@ export function VaultBrowser({ api: grundApi, scope, startPfad = '', onPfadGewec
                             onNeueDatei={(o) => setDialog({ art: 'datei', ausgang: o })}
                             onNeuerOrdner={(o) => setDialog({ art: 'ordner', ausgang: o })}
                             onHochladen={hochladenStarten}
+                            onOrdnerHochladen={ordnerHochladenStarten}
                             onUmbenennen={(p) => setDialog({ art: 'umbenennen', ausgang: p })}
                             onLoeschen={loeschen}
                             onHerunterladen={(p) => globalThis.open(api.rohUrl(scope, p, true), '_blank')}
@@ -349,11 +421,22 @@ export function VaultBrowser({ api: grundApi, scope, startPfad = '', onPfadGewec
                     const datei = e.target.files?.[0];
                     e.target.value = '';
                     if (datei) {
-                        void ausfuehren(async () => {
-                            const d = await api.hochladen(scope, datei, hochladenOrdner.current);
-                            oeffnen(d.path);
-                        });
+                        postenHochladen([{ datei, ordner: hochladenOrdner.current }]);
                     }
+                }}
+            />
+
+            <input
+                ref={ordnerFeld}
+                type="file"
+                multiple
+                className="hidden"
+                aria-hidden
+                {...{ webkitdirectory: '', directory: '' }}
+                onChange={(e) => {
+                    const dateien = [...(e.target.files ?? [])];
+                    e.target.value = '';
+                    postenHochladen(ordnerPosten(hochladenOrdner.current, dateien));
                 }}
             />
         </div>

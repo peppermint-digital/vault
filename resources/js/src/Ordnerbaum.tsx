@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Download, Eye, FilePlus, FileText, Folder, FolderOpen, FolderPlus, MoreVertical, Pencil, Trash2, Upload } from 'lucide-react';
+import { ChevronDown, ChevronRight, Download, Eye, FilePlus, FileText, Folder, FolderOpen, FolderPlus, FolderUp, MoreVertical, Pencil, Trash2, Upload } from 'lucide-react';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import type { Baumeintrag } from './typen';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
@@ -25,6 +25,8 @@ export interface OrdnerbaumProps {
     onNeueDatei?: (ordner: string) => void;
     onNeuerOrdner?: (ordner: string) => void;
     onHochladen?: (ordner: string) => void;
+    /** Einen ganzen Ordner in diesen hochladen, Unterordner bleiben erhalten (0.6.2). */
+    onOrdnerHochladen?: (ordner: string) => void;
     onUmbenennen?: (pfad: string) => void;
     onLoeschen?: (pfad: string, typ: 'file' | 'folder') => void;
     onHerunterladen?: (pfad: string) => void;
@@ -60,7 +62,10 @@ function merken(schluessel: string, pfade: Set<string>): void {
     }
 }
 
-type EintragProps = Omit<OrdnerbaumProps, 'baum' | 'leerText'> & { knoten: Baumeintrag; tiefe: number };
+type EintragProps = Omit<OrdnerbaumProps, 'baum' | 'leerText'> & {
+    knoten: Baumeintrag;
+    tiefe: number;
+};
 
 function Eintrag(props: EintragProps) {
     const { knoten, tiefe, aktuellerPfad, speicherSchluessel, onWaehlen, onLesen, nurLesen } = props;
@@ -167,7 +172,14 @@ function Eintrag(props: EintragProps) {
                     </button>
                 )}
 
-                {props.renderBaumMarke && <span className="flex shrink-0 items-center">{props.renderBaumMarke({ pfad: knoten.path, art: istOrdner ? 'ordner' : 'datei' })}</span>}
+                {props.renderBaumMarke && (
+                    <span className="flex shrink-0 items-center">
+                        {props.renderBaumMarke({
+                            pfad: knoten.path,
+                            art: istOrdner ? 'ordner' : 'datei',
+                        })}
+                    </span>
+                )}
                 {hatMenue && (
                     <DropdownMenu>
                         <DropdownMenuTrigger
@@ -188,6 +200,11 @@ function Eintrag(props: EintragProps) {
                                     <DropdownMenuItem onSelect={() => props.onHochladen?.(knoten.path)}>
                                         <Upload /> Datei hochladen
                                     </DropdownMenuItem>
+                                    {props.onOrdnerHochladen && (
+                                        <DropdownMenuItem onSelect={() => props.onOrdnerHochladen?.(knoten.path)}>
+                                            <FolderUp /> Ordner hochladen
+                                        </DropdownMenuItem>
+                                    )}
                                     <DropdownMenuSeparator />
                                 </>
                             )}

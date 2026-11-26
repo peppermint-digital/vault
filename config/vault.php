@@ -95,6 +95,24 @@ return [
         'tage' => (int) env('VAULT_TRASH_DAYS', 30),    // 0 = nie selbst aufraeumen
     ],
 
+    /*
+     | Die JSON-Schiene der Oberflaeche. `an => false`, wenn ein Produkt eigene
+     | Controller behaelt (AI Brain bis V2). Die Middleware sorgt nur fuer die
+     | Anmeldung; jede Aktion prueft ihre Rechte selbst ueber `Vaultrechte`.
+     */
+    'routen' => [
+        'an' => env('VAULT_ROUTEN', true),
+        'praefix' => 'vault/api',
+        'middleware' => ['web', 'auth'],
+        'name' => 'vault.api.',
+        // Oeffentliche Freigabelinks: <praefix>/<token>
+        'freigabe_praefix' => 'geteilt',
+    ],
+
+    'hochladen' => [
+        'max_kb' => (int) env('VAULT_UPLOAD_MAX_KB', 51200),
+    ],
+
     'suche' => [
         // Vorne an jeden Treffer-Pfad; die Seite gehoert dem Produkt.
         'url_praefix' => '/notes?path=',

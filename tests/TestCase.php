@@ -22,6 +22,7 @@ abstract class TestCase extends Base
     {
         $this->wurzel = sys_get_temp_dir().'/vault-paket-test-'.bin2hex(random_bytes(6));
 
+        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
         $app['config']->set('database.default', 'testing');
         $app['config']->set('database.connections.testing', [
             'driver' => 'sqlite',
@@ -30,6 +31,7 @@ abstract class TestCase extends Base
             'foreign_key_constraints' => true,
         ]);
         $app['config']->set('vault.user_model', Benutzer::class);
+        $app['config']->set('auth.providers.users.model', Benutzer::class);
         $app['config']->set('filesystems.disks.vault', ['driver' => 'local', 'root' => $this->wurzel.'/vaults', 'throw' => true]);
         $app['config']->set('vault.versionen.pfad', $this->wurzel.'/versions');
         $app['config']->set('vault.papierkorb.pfad', $this->wurzel.'/trash');

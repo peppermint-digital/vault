@@ -2,6 +2,7 @@
 
 namespace Peppermint\Vault;
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Peppermint\Vault\Console\PapierkorbLeerenCommand;
 use Peppermint\Vault\Contracts\Benutzeradresse;
@@ -50,6 +51,13 @@ class VaultServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([PapierkorbLeerenCommand::class]);
+        }
+
+        if (config('vault.routen.an', true)) {
+            Route::prefix((string) config('vault.routen.praefix', 'vault/api'))
+                ->middleware((array) config('vault.routen.middleware', ['web', 'auth']))
+                ->name((string) config('vault.routen.name', 'vault.api.'))
+                ->group(__DIR__.'/../routes/vault.php');
         }
 
         /*

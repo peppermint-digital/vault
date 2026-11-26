@@ -25,7 +25,7 @@ Plan und Herkunft: `codingshare/vault-paket-plan-2026-11-26.md`. Der Kern ist au
 | JSON-Schiene für die Oberfläche | `routes/vault.php`, `Http\Controllers\*` |
 | Oberfläche (npm) | `VaultBrowser`, `Ordnerbaum`, `Dateiansicht`, `Versionsliste`, `Papierkorbliste`, `FreigabeDialog`, `AnlegenDialog`, `vaultApi` |
 
-**Noch nicht drin, folgt:** die öffentliche Ansicht der Freigabelinks (`/geteilt/{token}`), die Serverseite für EuroOffice, externe Quellen (SMB), PDF/EPUB-Anmerkungen, Vorschaubilder und MCP-Bausteine.
+**Noch nicht drin, folgt:** die Serverseite für EuroOffice, externe Quellen (SMB), PDF/EPUB-Anmerkungen, Vorschaubilder und MCP-Bausteine.
 
 ## JSON-Schiene
 
@@ -40,6 +40,13 @@ Jede Anfrage trägt `?scope=`: `private` steht für den eigenen Bereich, sonst s
 | `GET roh` | Rohdatei; HTML nur mit Content-Security-Policy |
 | `POST verschieben`, `POST hochladen`, `GET suche`, `GET verweise` | |
 | `versionen…`, `papierkorb…`, `freigaben…` | Listen und Aktionen; Rechte über den Bereich des Eintrags |
+
+**Öffentliche Schiene der Freigabelinks** unter `vault.routen.oeffentlich_praefix` (Vorgabe `vault/geteilt`), ohne Anmeldung:
+- `GET {token}/info`: Name, Format und Inhalt, sofern nicht gesperrt.
+- `POST {token}/entsperren`: Passwort prüfen, gedrosselt auf 10 Versuche je Minute.
+- `GET {token}/roh/{unterpfad?}`: die Datei selbst oder eine Nachbardatei aus demselben Ordner.
+
+Ein unbekannter Token gibt 404, ein zurückgezogener oder abgelaufener 410, ein gesperrter 403. Eine Freigabe in der Wurzel bekommt keine Nachbarn. Die **Seite** `/geteilt/{token}` rendert das Produkt mit dem Baustein `GeteilteAnsicht`. HTML läuft dort in einem iframe ohne `allow-same-origin`.
 
 ## Oberfläche
 

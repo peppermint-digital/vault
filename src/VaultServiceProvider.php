@@ -58,6 +58,11 @@ class VaultServiceProvider extends ServiceProvider
                 ->middleware((array) config('vault.routen.middleware', ['web', 'auth']))
                 ->name((string) config('vault.routen.name', 'vault.api.'))
                 ->group(__DIR__.'/../routes/vault.php');
+
+            Route::prefix((string) config('vault.routen.oeffentlich_praefix', 'vault/geteilt'))
+                ->middleware((array) config('vault.routen.oeffentlich_middleware', ['web']))
+                ->name((string) config('vault.routen.name', 'vault.api.').'geteilt.')
+                ->group(__DIR__.'/../routes/oeffentlich.php');
         }
 
         /*

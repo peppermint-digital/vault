@@ -105,8 +105,11 @@ return [
         'praefix' => 'vault/api',
         'middleware' => ['web', 'auth'],
         'name' => 'vault.api.',
-        // Oeffentliche Freigabelinks: <praefix>/<token>
+        // Die SEITE eines Freigabelinks (gehoert dem Produkt): /<freigabe_praefix>/<token>
         'freigabe_praefix' => 'geteilt',
+        // Die oeffentliche Schiene dazu (info, entsperren, roh), ohne Anmeldung.
+        'oeffentlich_praefix' => 'vault/geteilt',
+        'oeffentlich_middleware' => ['web'],
     ],
 
     'hochladen' => [

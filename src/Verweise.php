@@ -20,7 +20,7 @@ class Verweise
     /** @return array{nodes: array<array{id: string, label: string, path: string, linkCount: int}>, edges: array<array{source: string, target: string}>} */
     public function graph(Bereich $bereich): array
     {
-        return Cache::remember($this->schluessel($bereich), now()->addHours(24), fn () => $this->bauen($bereich));
+        return Cache::remember($this->schluessel($bereich), now()->addMinutes(max(1, (int) config('vault.verweise.ttl_minuten', 1440))), fn () => $this->bauen($bereich));
     }
 
     /** @return array<array{id: string, label: string, path: string}> */
@@ -37,6 +37,10 @@ class Verweise
         return $treffer;
     }
 
+    /**
+     * Oeffentlich fuer Produkte: nach einem Schreiben am Paket vorbei
+     * (Agent mit eingehaengtem Vault, Sync) den Graph des Bereichs verwerfen.
+     */
     public function vergessen(Bereich $bereich): void
     {
         Cache::forget($this->schluessel($bereich));

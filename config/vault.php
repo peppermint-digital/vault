@@ -93,6 +93,17 @@ return [
      */
     'verborgene_wurzeldateien' => [],
 
+    /*
+     | Verweisgraph und Rueckverweise liegen im geteilten Laravel-Cache. Jedes
+     | Datei-Ereignis des Pakets vergisst sie sofort. Wer AM PAKET VORBEI
+     | schreibt (Agenten mit eingehaengtem Vault, Sync), ruft
+     | `Vault::verweise()->vergessen($bereich)` — oder lebt mit dieser
+     | Hoechstdauer. Minuten. AI Brain: 15.
+     */
+    'verweise' => [
+        'ttl_minuten' => (int) env('VAULT_VERWEISE_TTL_MINUTEN', 1440),
+    ],
+
     'versionen' => [
         'pfad' => env('VAULT_VERSIONS_PATH'),           // null = storage/app/vault-versions
         'max_je_datei' => (int) env('VAULT_MAX_VERSIONS_PER_FILE', 30),

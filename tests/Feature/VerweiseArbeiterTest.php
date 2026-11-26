@@ -72,3 +72,35 @@ it('zeigt auf Arbeiter A eine Notiz, die Arbeiter B aus dem Papierkorb geholt ha
 
     expect(rueck(als($a), $this->bereich))->toBe(['a.md']);
 });
+
+it('sieht ein Schreiben am Paket vorbei erst nach vergessen() oder nach der TTL', function () {
+    config(['vault.verweise.ttl_minuten' => 15]);
+    $vault = neuerArbeiter()['vault'];
+    $vault->schreiben($this->bereich, 'b.md', 'Ziel');
+    $vault->schreiben($this->bereich, 'a.md', '[[b]]');
+    expect(rueck($vault, $this->bereich))->toBe(['a.md']);
+
+    // Ein Agent schreibt direkt ins eingehaengte Verzeichnis — kein Ereignis.
+    file_put_contents($vault->absolut($this->bereich, 'agent.md'), '[[b]]');
+    expect(rueck($vault, $this->bereich))->toBe(['a.md']);
+
+    $this->travel(16)->minutes();
+    expect(rueck($vault, $this->bereich))->toBe(['a.md', 'agent.md']);
+
+    file_put_contents($vault->absolut($this->bereich, 'zweiter.md'), '[[b]]');
+    $vault->verweise()->vergessen($this->bereich);
+    expect(rueck($vault, $this->bereich))->toBe(['a.md', 'agent.md', 'zweiter.md']);
+});
+
+it('haelt den Graph ohne Konfiguration 24 Stunden', function () {
+    $vault = neuerArbeiter()['vault'];
+    $vault->schreiben($this->bereich, 'b.md', 'Ziel');
+    expect(rueck($vault, $this->bereich))->toBe([]);
+    file_put_contents($vault->absolut($this->bereich, 'agent.md'), '[[b]]');
+
+    $this->travel(23)->hours();
+    expect(rueck($vault, $this->bereich))->toBe([]);
+
+    $this->travel(2)->hours();
+    expect(rueck($vault, $this->bereich))->toBe(['agent.md']);
+});

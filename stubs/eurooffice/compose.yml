@@ -1,0 +1,41 @@
+# EuroOffice Document Server — auf demselben Server wie das Produkt (peppermint/vault 0.4.1).
+#
+# Start (als root):
+#   docker compose -f compose.yml --env-file .env up -d
+# .env (Rechte 600) enthaelt nur: JWT_SECRET=<64 Hex-Zeichen>, derselbe Wert wie
+# EUROOFFICE_JWT_SECRET in der .env des Managers.
+#
+# Drei Regeln, die nicht verhandelbar sind (Erklaerung in README.md):
+#   1. Das Image ist per Digest gepinnt, nicht :latest.
+#   2. Der Port haengt NUR an 127.0.0.1. Docker umgeht mit veroeffentlichten
+#      Ports die ufw-Firewall — ein "8099:80" waere von aussen erreichbar.
+#   3. JWT ist an. Ohne Geheimnis startet der Manager den Editor nicht.
+name: eurooffice
+
+services:
+  documentserver:
+    # euro-office-documentserver 9.3.4-hotfix.1 (dieselbe Fassung wie AI Brain, Stand 26.11.2026)
+    image: ghcr.io/euro-office/documentserver@sha256:889e681923d2dcc8bdfb92fe128d10e185fcff880d302b6a0c0c7bf339499290
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8099:80"
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt in .env}
+      JWT_HEADER: Authorization
+    volumes:
+      - eurooffice-conf:/etc/euro-office/documentserver
+      - eurooffice-data:/var/lib/euro-office/documentserver
+      - eurooffice-logs:/var/log/euro-office/documentserver
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/healthcheck | grep -q true"]
+      interval: 30s
+      timeout: 5s
+      start_period: 180s
+      retries: 3
+
+volumes:
+  eurooffice-conf:
+  eurooffice-data:
+  eurooffice-logs:

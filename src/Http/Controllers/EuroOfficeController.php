@@ -159,7 +159,7 @@ class EuroOfficeController extends Controller
         }
 
         try {
-            $antwort = Http::timeout(120)->withoutVerifying()->get($url);
+            $antwort = Http::timeout(120)->withoutVerifying()->get($this->client->abrufAdresse($url));
 
             if (! $antwort->successful()) {
                 Log::error('vault EuroOffice: Datei konnte nicht geladen werden', ['http' => $antwort->status()]);

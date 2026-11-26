@@ -90,6 +90,53 @@ Je Produkt gibt es einen eigenen Document Server mit eigenem JWT-Geheimnis (F40)
 - **Neu gegenüber AI Brain:** Das Rückweg-Token trägt die Person. Beim Speichern wird über `Vaultrechte` erneut geprüft, ob sie noch schreiben darf.
 - Neue `.docx`, `.xlsx` und `.pptx` entstehen als Kopie der leeren Vorlagen in `stubs/office/`. Die Vorlagen sind mit LibreOffice erzeugt und enthalten keinen Autor.
 
+### EuroOffice installieren (Standardweg, 0.4.1)
+
+Der Document Server läuft **auf demselben Server wie das Produkt, nur auf `127.0.0.1`**. Der Browser erreicht ihn über einen Pfad der eigenen Domain, `<APP_URL>/eurooffice/`. Es gibt keine eigene Domain, kein zweites Zertifikat und kein VPN dazwischen. Die Vorlagen liegen in `stubs/eurooffice/`.
+
+```
+Browser ──https──► <APP_URL>/eurooffice/…    (nginx der Site)  ──► 127.0.0.1:8099 (Container)
+Produkt ──http───► 127.0.0.1:8099            (EUROOFFICE_INTERNAL_URL)
+Document Server ──https──► <APP_URL>/vault/eurooffice/…   (Datei holen, Rückweg; per Token)
+```
+
+1. **Container** (Docker mit Compose-Plugin, Root):
+
+   ```bash
+   install -d -m 0750 /opt/eurooffice
+   cp stubs/eurooffice/compose.yml /opt/eurooffice/
+   umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > /opt/eurooffice/.env
+   docker compose -f /opt/eurooffice/compose.yml --env-file /opt/eurooffice/.env up -d
+   curl -fsS http://127.0.0.1:8099/healthcheck     # true
+   ```
+
+2. **nginx** der Site:
+   - `stubs/eurooffice/nginx-forge-before.conf` in den http-Kontext, bei Forge nach `forge-conf/<site-id>/before/`.
+   - `nginx-forge-server.conf` in den `server`-Block, bei Forge nach `forge-conf/<site-id>/server/`. Forge überschreibt beide Ordner nicht.
+   - Danach `nginx -t && systemctl reload nginx`.
+
+3. **Produkt** (`.env`):
+
+   ```dotenv
+   EUROOFFICE_ENABLED=true
+   EUROOFFICE_PUBLIC_URL="${APP_URL}/eurooffice"
+   EUROOFFICE_INTERNAL_URL=http://127.0.0.1:8099
+   EUROOFFICE_JWT_SECRET=<derselbe Wert wie JWT_SECRET oben>
+   ```
+
+   Danach `php artisan optimize` und PHP-FPM neu laden; bei Octane `octane:reload`.
+
+**Worauf es ankommt:**
+- **Port nur an `127.0.0.1`.** Docker trägt veröffentlichte Ports an der Firewall vorbei ein.
+- **Image per Digest**, nicht `:latest`. Ein Update ist ein bewusster Tausch des Digests, mit einer Probe danach.
+- **`location ^~ /eurooffice/`.** Ohne `^~` gewinnen die Regex-Locations der Site (`\.php$`).
+- **`X-Forwarded-Prefix /eurooffice`.** Der Document Server baut die Adressen für den Browser aus der Anfrage. Ohne Präfix lädt der Editor und meldet dann „Herunterladen ist fehlgeschlagen“ (AI Brain, Learning #4031).
+- **WebSocket-Upgrade** über die `map` aus `nginx-forge-before.conf`.
+- **Datei-Adressen beim Rückweg (0.4.1):**
+  - Teilt sich der Document Server den Host mit dem Produkt, nimmt der Rückweg nur Adressen **unterhalb** von `EUROOFFICE_PUBLIC_URL` an, also `/eurooffice/…`, nicht irgendeine Seite des Produkts.
+  - Geholt wird über `EUROOFFICE_INTERNAL_URL` (127.0.0.1), nicht über die eigene Domain.
+- **Prüfen:** im Browser die Netzwerkliste des Editors. `cache/files/…` und `Editor.bin` müssen unter `<APP_URL>/eurooffice/` mit 200 kommen, der WebSocket mit 101. Die Server-Logs sehen auch dann grün aus, wenn das nicht stimmt.
+
 ## Vorschaubilder und Anmerkungen
 
 - `GET vault/api/vorschau`: Vorschaubild mit 320 px (JPEG über GD, SVG direkt). Abgelegt unter `vault.vorschau.pfad`, außerhalb der Disk. Der Ordnerbaum zeigt es bei Bildern.

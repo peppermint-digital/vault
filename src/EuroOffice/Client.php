@@ -262,12 +262,45 @@ class Client
 
             $samePort = ($target['port'] ?? null) === ($allowed['port'] ?? null);
 
-            if (strcasecmp($target['host'], $allowed['host']) === 0 && $samePort) {
+            if (strcasecmp($target['host'], $allowed['host']) === 0 && $samePort && $this->unterPfad($target['path'] ?? '/', $allowed['path'] ?? '')) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Laeuft der Document Server unter einem Pfad der eigenen Domain
+     * (`<APP_URL>/eurooffice`, 0.4.1), teilt er sich den Host mit dem Produkt.
+     * Dann reicht der Host-Vergleich nicht: Jede Adresse des Produkts saehe
+     * wie „unser Document Server" aus. Hat die bekannte Adresse einen Pfad,
+     * muss die Datei-Adresse darunter liegen.
+     */
+    private function unterPfad(string $pfad, string $basis): bool
+    {
+        $basis = rtrim($basis, '/');
+
+        return $basis === '' || str_starts_with($pfad, $basis.'/');
+    }
+
+    /**
+     * Woher DIESER Server die bearbeitete Datei holt: Nennt der Document
+     * Server seine oeffentliche Adresse (`https://manager.example/eurooffice/cache/...`),
+     * geht der Abruf ueber `internal_url` (`http://127.0.0.1:8099/cache/...`) —
+     * ohne Umweg ueber die eigene Domain und ihr Zertifikat. Ohne eigene
+     * interne Adresse bleibt die Adresse, wie sie ist.
+     */
+    public function abrufAdresse(string $url): string
+    {
+        $oeffentlich = rtrim($this->publicUrl(), '/');
+        $intern = rtrim((string) config('vault.eurooffice.internal_url', ''), '/');
+
+        if ($oeffentlich === '' || $intern === '' || ! str_starts_with($url, $oeffentlich.'/')) {
+            return $url;
+        }
+
+        return $intern.substr($url, strlen($oeffentlich));
     }
 
     /**

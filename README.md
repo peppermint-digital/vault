@@ -28,9 +28,26 @@ Plan und Herkunft: `codingshare/vault-paket-plan-2026-11-26.md`. Der Kern ist au
 | MCP-Bausteine (lesen, auflisten, suchen, schreiben) | `Mcp\*` (mit `laravel/mcp`) |
 | Vorschaubilder, PDF/EPUB-Anmerkungen mit Spiegelung in den Steckbrief | `Vorschaubilder`, `Anmerkungen\*`, `scripts/pdf_annotations.py` |
 | EuroOffice: Konfiguration, Datei, Rückweg, Blankovorlagen | `EuroOffice\*`, `Http\Controllers\EuroOfficeController`, `stubs/office/` |
-| Oberfläche (npm) | `PdfAnnotator` (Einstieg `/anmerken`), `EpubAnnotator`, `EuroOfficeEditor`, `GeteilteAnsicht`, `VaultBrowser`, `Ordnerbaum`, `Dateiansicht`, `Versionsliste`, `Papierkorbliste`, `FreigabeDialog`, `AnlegenDialog`, `vaultApi` |
+| Oberfläche (npm) | `PdfAnnotator` (Einstieg `/anmerken`), `EpubAnnotator`, `EuroOfficeEditor`, `GeteilteAnsicht`, `VaultBrowser`, `Ordnerbaum`, `Dateiansicht`, `Versionsliste`, `Papierkorbliste`, `FreigabeDialog`, `AnlegenDialog`, `Bereichsreiter`, `VerweisGraph`, `vaultApi` |
 
 **Noch nicht drin, folgt:** das ebenenweise Nachladen externer Quellen im Ordnerbaum. Die Schiene dafür steht schon (`vaultApi.quelleEbene`).
+
+## Leiste, Bereiche und Graph (0.5.0)
+
+In jedem Produkt sieht die Vault-Leiste gleich aus, Vorbild ist AI Brain. Die Leiste zeigt **Funktionen**, die **Bereiche** stehen als Reiter oben auf der Seite.
+
+- **`Navigation::eintraege($person)`:** liefert Vault, Graph und Freigabelinks mit `titel`, `pfad`, `symbol` (lucide).
+  - Die Pfade stehen in `vault.navigation.*`; Vorgaben sind `/vault`, `/vault/graph`, `/vault/freigaben`. `null` oder `''` lässt einen Eintrag weg.
+  - Wer keinen Bereich sieht, bekommt keine Leiste.
+  - Eigenes hängt das Produkt **dahinter**: der Manager „Objekte“, AI Brain „Externe Quellen“.
+- **`Navigation::bereiche($person)`:** liefert die lesbaren Bereiche in fester Reihenfolge (persönlich, Firma bzw. global, Räume, Quellen), jeweils mit `slug` (der `scope`-Wert), `label`, `art` und `darfSchreiben`.
+- **`<Bereichsreiter bereiche aktiv onWechsel>`:** Aufbau und Aussehen der AI-Brain-Bereichsauswahl.
+  - Karte, je Bereich ein kleiner Knopf: offen gefüllt, sonst umrandet, mit Symbol (Schloss, Globus, Personen, Festplatte).
+  - Darunter eine Zeile, was der Bereich ist und ob man bearbeiten darf.
+  - Eigenes des Produkts, z. B. „Neuer Space…“, kommt als `children` und steht rechts.
+- **`<VerweisGraph api scope onOeffnen>`:** der Graph aus AI Brain (Suche, Zähler, Zoom, Hover-Kasten, Legende), **je Bereich** über `api.verweise(scope)`.
+  - Die Daten laufen durch dieselbe Leserecht-Prüfung wie jeder Weg. Einen Graph über mehrere Bereiche gibt es nicht.
+  - Braucht `d3`; es kommt als Abhängigkeit mit und bleibt im Bündel extern.
 
 ## JSON-Schiene
 
@@ -41,6 +58,7 @@ Jede Anfrage trägt `?scope=`: `private` steht für den eigenen Bereich, sonst s
 | | |
 |---|---|
 | `GET baum` | Bereich (Label, darfSchreiben) und Baum |
+| `GET verweise` | Verweisgraph des Bereichs (`?scope=`), mit `path` die Rückverweise einer Datei |
 | `GET/POST/PATCH/DELETE datei` | lesen, anlegen (überschreibt nie, 422), speichern (409 bei fremder Änderung über `base_version`), in den Papierkorb |
 | `GET roh` | Rohdatei; HTML nur mit Content-Security-Policy |
 | `POST verschieben`, `POST hochladen`, `GET suche`, `GET verweise` | |

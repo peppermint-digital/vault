@@ -6,7 +6,16 @@
         "strict": true,
         "declaration": true,
         "skipLibCheck": true,
-        "noEmit": true
+        "noEmit": true,
+        "jsx": "react-jsx",
+        "lib": [
+            "ES2022",
+            "DOM",
+            "DOM.Iterable"
+        ]
     },
-    "include": ["resources/js/src"]
+    "include": [
+        "resources/js/src",
+        "resources/js/tests"
+    ]
 }

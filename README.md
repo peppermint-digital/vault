@@ -22,8 +22,45 @@ Plan und Herkunft: `codingshare/vault-paket-plan-2026-11-26.md`. Der Kern ist au
 | Räume, Mitglieder | `Models\VaultSpace` |
 | Freigabelinks | `Models\VaultShare` |
 | HTML → Markdown (Umzug der Manager-Notizen) | `Umwandlung\HtmlZuMarkdown` |
+| JSON-Schiene für die Oberfläche | `routes/vault.php`, `Http\Controllers\*` |
+| Oberfläche (npm) | `VaultBrowser`, `Ordnerbaum`, `Dateiansicht`, `Versionsliste`, `Papierkorbliste`, `FreigabeDialog`, `AnlegenDialog`, `vaultApi` |
 
-**Noch nicht drin, folgt:** Routen und Controller, die Oberfläche (`@peppermint-digital/vault` enthält bisher nur die Datenformen), EuroOffice-Server-Seite, externe Quellen (SMB), PDF/EPUB-Anmerkungen und MCP-Bausteine.
+**Noch nicht drin, folgt:** die öffentliche Ansicht der Freigabelinks (`/geteilt/{token}`), die Serverseite für EuroOffice, externe Quellen (SMB), PDF/EPUB-Anmerkungen, Vorschaubilder und MCP-Bausteine.
+
+## JSON-Schiene
+
+Unter `vault.routen.praefix` (Vorgabe `vault/api`), Middleware `web` + `auth`. Abschalten mit `VAULT_ROUTEN=false`, wenn ein Produkt seine eigenen Controller behält.
+
+Jede Anfrage trägt `?scope=`: `private` steht für den eigenen Bereich, sonst steht dort der Slug eines Raums. Wer nicht lesen darf, bekommt **404** (ein fremder Raum soll nicht erkennbar sein). Wer nicht schreiben darf, bekommt **403**.
+
+| | |
+|---|---|
+| `GET baum` | Bereich (Label, darfSchreiben) und Baum |
+| `GET/POST/PATCH/DELETE datei` | lesen, anlegen (überschreibt nie, 422), speichern (409 bei fremder Änderung über `base_version`), in den Papierkorb |
+| `GET roh` | Rohdatei; HTML nur mit Content-Security-Policy |
+| `POST verschieben`, `POST hochladen`, `GET suche`, `GET verweise` | |
+| `versionen…`, `papierkorb…`, `freigaben…` | Listen und Aktionen; Rechte über den Bereich des Eintrags |
+
+## Oberfläche
+
+```tsx
+import { VaultBrowser, vaultApi } from '@peppermint-digital/vault';
+
+const api = vaultApi({ basisUrl: '/vault/api', csrfToken: () => document.querySelector<HTMLMetaElement>('meta[name=csrf-token]')!.content });
+
+<VaultBrowser api={api} scope="private" renderEditor={({ wert, onAendern }) => <MarkdownEditor value={wert} onChange={onAendern} />} />
+```
+
+- **Seite, Layout und die Wahl des Bereichs** bleiben beim Produkt. Der Baustein zeigt genau einen Bereich.
+- **Editor und Lese-Ansicht** sind Slots (`renderEditor`, `renderAnsicht`). Ohne sie gibt es ein Textfeld und vorformatierten Text.
+- **Konflikt:** Hat jemand die Datei geändert, während du sie bearbeitet hast, fragt die Ansicht nach. Zur Wahl stehen „Meine Fassung trotzdem speichern“ und „Andere Fassung übernehmen“. Nichts wird still überschrieben.
+- **Tailwind v4 liest `node_modules` nicht ein.** Das Produkt braucht deshalb in seiner CSS-Datei:
+
+  ```css
+  @source "../../node_modules/@peppermint-digital/vault/dist";
+  ```
+
+  Fehlt die Zeile, gibt es keinen Fehler, die Bausteine sitzen dann nur falsch.
 
 ## Verträge
 
@@ -67,10 +104,13 @@ Unter MySQL bekommt der Index über `scope` + `path` ein Präfix (`Support\Pfadi
 1. **Pfadsicherheit:** Der Präfixvergleich zählt jetzt den Trenner mit. In AI Brain lag `/vaults/10/x` scheinbar in `/vaults/1`, erreichbar über einen verlinkten Unterordner.
 2. **Verschieben:** Versionen und Datei-IDs wandern mit. In AI Brain blieb die Versionsliste am alten Pfad stehen.
 3. **Graph-Cache geteilter Bereiche:** Neuer Schlüssel `vault_graph_area_*`. Der persönliche Bereich behält `vault_graph_{id}`.
+4. **Freigabelink anlegen** verlangt Schreibrecht im Bereich. In AI Brain reichte das Leserecht. Im Firmen-Vault liest aber jede Person alles, und ein Link macht eine Datei öffentlich.
+5. **Ordnerbaum:** Die Aktionen liegen hinter „⋮“ statt hinter dem Rechtsklick, den es auf dem Telefon nicht gibt. Der Aufklapp-Zustand wird je Bereich gemerkt.
 
 ## Tests
 
 ```bash
 composer test                     # Pint + Pest (SQLite)
+npm test && npm run typecheck     # vitest (jsdom) + tsc
 VAULT_MYSQL_HOST=… vendor/bin/pest tests/Mysql   # gegen ein Wegwerf-MySQL
 ```

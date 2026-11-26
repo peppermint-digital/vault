@@ -95,9 +95,22 @@ class VaultServiceProvider extends ServiceProvider
                 ->middleware((array) config('vault.routen.oeffentlich_middleware', ['web']))
                 ->name((string) config('vault.routen.name', 'vault.api.').'geteilt.')
                 ->group(__DIR__.'/../routes/oeffentlich.php');
+        }
+
+        /*
+         * EuroOffice mit eigenem Schalter (0.3.5, AI Brain E5c): Ein Produkt mit
+         * eigener JSON-Schiene (routen.an = false) braucht trotzdem die Wege des
+         * Document Servers. `null` = wie `vault.routen.an` (bisheriges Verhalten).
+         */
+        $euroOffice = config('vault.eurooffice.routen');
+        if ($euroOffice === null ? (bool) config('vault.routen.an', true) : (bool) $euroOffice) {
+            Route::prefix((string) (config('vault.eurooffice.konfiguration.praefix') ?? config('vault.routen.praefix', 'vault/api')))
+                ->middleware((array) (config('vault.eurooffice.konfiguration.middleware') ?? config('vault.routen.middleware', ['web', 'auth'])))
+                ->name((string) config('vault.routen.name', 'vault.api.'))
+                ->group(__DIR__.'/../routes/eurooffice-konfiguration.php');
 
             Route::prefix((string) config('vault.eurooffice.praefix', 'vault/eurooffice'))
-                ->middleware(['throttle:120,1'])
+                ->middleware(self::drossel())
                 ->name((string) config('vault.routen.name', 'vault.api.').'eurooffice.')
                 ->group(__DIR__.'/../routes/eurooffice.php');
         }
@@ -124,5 +137,20 @@ class VaultServiceProvider extends ServiceProvider
         if (config('vault.quellen', false) && config('vault.run_migrations', true)) {
             $this->loadMigrationsFrom(__DIR__.'/../database/migrations/quellen');
         }
+    }
+
+    /**
+     * Die Drossel der Wege ohne Sitzung (Datei holen, Rueckweg). Ein Text oder
+     * eine Liste von Middleware; Vorgabe wie bisher `throttle:120,1`. AI Brain
+     * setzt eine benannte Drossel (Riegel gegen namenlose, #1428/#1457).
+     *
+     * @return list<string>
+     */
+    private static function drossel(): array
+    {
+        return array_values(array_filter(
+            (array) config('vault.eurooffice.drossel', 'throttle:120,1'),
+            fn ($eintrag): bool => is_string($eintrag) && $eintrag !== '',
+        ));
     }
 }

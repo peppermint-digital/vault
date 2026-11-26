@@ -80,6 +80,11 @@ Je Produkt gibt es einen eigenen Document Server mit eigenem JWT-Geheimnis (F40)
 
 - `GET vault/api/eurooffice/konfiguration?scope=&path=` liefert mit Sitzung die signierte Konfiguration. Bearbeiten und einen Rückweg gibt es nur mit Schreibrecht.
 - `GET vault/eurooffice/datei/{token}` und `POST vault/eurooffice/rueckweg/{token}` laufen **ohne Sitzung und ohne CSRF**. Gesichert sind sie über unser eigenes signiertes Token, gedrosselt auf 120 Anfragen pro Minute.
+- **Schalter (0.3.5):**
+  - `vault.eurooffice.routen` legt die EuroOffice-Routen unabhängig von `vault.routen.an` an. `null` heißt „wie `routen.an`“; das ist die Vorgabe.
+  - `vault.eurooffice.drossel` ist die Middleware der Wege ohne Sitzung, als Text oder Liste. Vorgabe ist `throttle:120,1`.
+  - `vault.eurooffice.konfiguration.praefix` und `.middleware` gelten für die Konfigurations-Route. `null` heißt „wie `routen.praefix` und `routen.middleware`“.
+  - Mit den Vorgaben bleiben Adressen, Namen und Middleware wie bisher.
 - Der Rückweg glaubt dem Server nie, wohin er schreiben soll: Das Ziel steht in unserem Token. Die Nutzlast muss signiert sein, und Dateien werden nur vom eigenen Document Server geholt (Schutz gegen SSRF). Eine leere oder fehlgeschlagene Antwort überschreibt nichts.
 - **Neu gegenüber AI Brain:** Das Rückweg-Token trägt die Person. Beim Speichern wird über `Vaultrechte` erneut geprüft, ob sie noch schreiben darf.
 - Neue `.docx`, `.xlsx` und `.pptx` entstehen als Kopie der leeren Vorlagen in `stubs/office/`. Die Vorlagen sind mit LibreOffice erzeugt und enthalten keinen Autor.

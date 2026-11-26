@@ -151,6 +151,15 @@ return [
         'timeout_seconds' => (int) env('EUROOFFICE_TIMEOUT', 15),
         // Praefix der Wege OHNE Sitzung (Datei holen, Rueckweg) — per eigenem Token gesichert.
         'praefix' => 'vault/eurooffice',
+        // Eigener Schalter fuer alle EuroOffice-Routen (0.3.5). null = wie `routen.an`.
+        'routen' => null,
+        // Drossel der Wege ohne Sitzung: Text oder Liste von Middleware (0.3.5).
+        'drossel' => 'throttle:120,1',
+        // Die Editor-Konfiguration (mit Sitzung). null = wie `routen.praefix` / `routen.middleware`.
+        'konfiguration' => [
+            'praefix' => null,
+            'middleware' => null,
+        ],
     ],
 
     /*

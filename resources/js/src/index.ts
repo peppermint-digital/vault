@@ -16,3 +16,4 @@ export { default as AnmerkungsListe } from './anmerkungen/AnmerkungsListe';
 export { default as AnmerkungsLeiste } from './anmerkungen/AnmerkungsLeiste';
 export * from './VerweisGraph';
 export * from './Bereichsreiter';
+export * from './VaultSeitenkopf';

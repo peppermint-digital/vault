@@ -28,7 +28,7 @@ Plan und Herkunft: `codingshare/vault-paket-plan-2026-11-26.md`. Der Kern ist au
 | MCP-Bausteine (lesen, auflisten, suchen, schreiben) | `Mcp\*` (mit `laravel/mcp`) |
 | Vorschaubilder, PDF/EPUB-Anmerkungen mit Spiegelung in den Steckbrief | `Vorschaubilder`, `Anmerkungen\*`, `scripts/pdf_annotations.py` |
 | EuroOffice: Konfiguration, Datei, Rückweg, Blankovorlagen | `EuroOffice\*`, `Http\Controllers\EuroOfficeController`, `stubs/office/` |
-| Oberfläche (npm) | `PdfAnnotator` (Einstieg `/anmerken`), `EpubAnnotator`, `EuroOfficeEditor`, `GeteilteAnsicht`, `VaultBrowser`, `Ordnerbaum`, `Dateiansicht`, `Versionsliste`, `Papierkorbliste`, `FreigabeDialog`, `AnlegenDialog`, `Bereichsreiter`, `VerweisGraph`, `vaultApi` |
+| Oberfläche (npm) | `PdfAnnotator` (Einstieg `/anmerken`), `EpubAnnotator`, `EuroOfficeEditor`, `GeteilteAnsicht`, `VaultBrowser`, `Ordnerbaum`, `Dateiansicht`, `Versionsliste`, `Papierkorbliste`, `FreigabeDialog`, `AnlegenDialog`, `Bereichsreiter`, `VerweisGraph`, `VaultSeitenkopf`, `vaultApi` |
 
 **Noch nicht drin, folgt:** das ebenenweise Nachladen externer Quellen im Ordnerbaum. Die Schiene dafür steht schon (`vaultApi.quelleEbene`).
 
@@ -48,6 +48,10 @@ In jedem Produkt sieht die Vault-Leiste gleich aus, Vorbild ist AI Brain. Die Le
 - **`<VerweisGraph api scope onOeffnen>`:** der Graph aus AI Brain (Suche, Zähler, Zoom, Hover-Kasten, Legende), **je Bereich** über `api.verweise(scope)`.
   - Die Daten laufen durch dieselbe Leserecht-Prüfung wie jeder Weg. Einen Graph über mehrere Bereiche gibt es nicht.
   - Braucht `d3`; es kommt als Abhängigkeit mit und bleibt im Bündel extern.
+
+- **`<VaultSeitenkopf titel untertitel>`** (0.5.1): Überschrift und Untertitel der Vault-Seiten wie in AI Brain, ohne Symbol.
+  - Vorgaben: „Vault“ mit `VAULT_UNTERTITEL`; auf der Graph-Seite „Graph“ mit `GRAPH_UNTERTITEL`.
+  - Rechts steht nur, was das Produkt als `children` mitgibt, etwa den „Assistent“ in AI Brain.
 
 ## JSON-Schiene
 

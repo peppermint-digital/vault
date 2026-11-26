@@ -89,3 +89,23 @@ describe('VerweisGraph', () => {
         unmount();
     });
 });
+
+describe('VaultSeitenkopf', () => {
+    it('zeigt Vault mit dem Untertitel aus AI Brain und nur mitgegebene Knoepfe', async () => {
+        const { VaultSeitenkopf } = await import('../src/VaultSeitenkopf');
+        const ohne = render(<VaultSeitenkopf />);
+        expect(ohne.container.querySelector('h1')?.textContent).toBe('Vault');
+        expect(ohne.container.textContent).toContain('alles an einem Ort');
+        expect(ohne.container.querySelector('button')).toBeNull();
+        ohne.unmount();
+
+        const mit = render(
+            <VaultSeitenkopf titel="Graph" untertitel="Zusammenhang">
+                <button type="button">Assistent</button>
+            </VaultSeitenkopf>,
+        );
+        expect(mit.container.querySelector('h1')?.textContent).toBe('Graph');
+        expect(mit.container.querySelector('button')?.textContent).toBe('Assistent');
+        mit.unmount();
+    });
+});

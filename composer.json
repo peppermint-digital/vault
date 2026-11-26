@@ -1,0 +1,55 @@
+{
+    "name": "peppermint/vault",
+    "description": "Der Vault als geteiltes Paket: Ablage mit Pfadsicherheit, Bereiche, Raeume, Versionen, Papierkorb, feste Datei-IDs und Verknuepfungen. Teilt Code, nicht Daten — jedes Produkt hat seine eigene Ablage und seine eigenen Tabellen.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "ext-dom": "*",
+        "ext-mbstring": "*",
+        "illuminate/support": "^11.0|^12.0|^13.0",
+        "illuminate/database": "^11.0|^12.0|^13.0",
+        "illuminate/filesystem": "^11.0|^12.0|^13.0",
+        "illuminate/http": "^11.0|^12.0|^13.0"
+    },
+    "suggest": {
+        "laravel/mcp": "Stellt die bereichsneutralen Vault-Werkzeuge (lesen, suchen, schreiben, auflisten) als MCP-Bausteine bereit.",
+        "spatie/laravel-permission": "Die Standardrechte fragen eine Verwalterrolle ueber hasRole() ab, wenn das Benutzermodell sie kennt."
+    },
+    "autoload": {
+        "psr-4": {
+            "Peppermint\\Vault\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Peppermint\\Vault\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Peppermint\\Vault\\VaultServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "require-dev": {
+        "orchestra/testbench": "^10.0|^11.0",
+        "pestphp/pest": "^4.0",
+        "laravel/pint": "^1.24"
+    },
+    "scripts": {
+        "lint": "pint --parallel",
+        "test:lint": "pint --parallel --test",
+        "test": [
+            "@test:lint",
+            "pest"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}

@@ -14,7 +14,7 @@ Plan und Herkunft: `codingshare/vault-paket-plan-2026-11-26.md`. Der Kern ist au
 | Pfadsicherheit, Disk | `Ablage` |
 | Lesen, Schreiben, Hochladen, Verschieben, Suche, Baum | `Vault` |
 | Versionen (Text und Binär) | `Versionen` |
-| Papierkorb | `Papierkorb`, `vault:papierkorb-leeren` |
+| Papierkorb | `Papierkorb`, `vault:papierkorb-leeren`, `vault:versionen-aufraeumen --trocken` |
 | Feste Datei-ID (F42) | `Dateikennung`, Tabelle `vault_files` |
 | Verknüpfungen mit Objekten | `Verknuepfung\Verknuepfungen`, Trait `HatVaultDateien`, Tabelle `vault_links` |
 | Ablage-Regel je Objektart | `Ablageregeln`, Vertrag `Ablageregel` |
@@ -73,6 +73,7 @@ const api = vaultApi({ basisUrl: '/vault/api', csrfToken: () => document.querySe
   ```
 
   Fehlt die Zeile, gibt es keinen Fehler, die Bausteine sitzen dann nur falsch.
+- **Anlegen-Dialog (0.4.0):** Die Art wählt man per Kachel, die Endung steht neben dem Namen. `VaultBrowser` bietet Notiz an, mit `euroOffice` zusätzlich Dokument, Tabelle und Präsentation. Wer `AnlegenDialog` selbst einbaut, gibt `formate` vor (`md`, `html`, `excalidraw`, `docx`, `xlsx`, `pptx`), dazu `vorhanden` (Namen im Zielordner, für den Hinweis vor dem Absenden) und `bereichName`.
 
 ## EuroOffice
 
@@ -199,6 +200,13 @@ Unter MySQL bekommt der Index über `scope` + `path` ein Präfix (`Support\Pfadi
 3. **Graph-Cache geteilter Bereiche:** Neuer Schlüssel `vault_graph_area_*`. Der persönliche Bereich behält `vault_graph_{id}`.
 4. **Freigabelink anlegen** verlangt Schreibrecht im Bereich. In AI Brain reichte das Leserecht. Im Firmen-Vault liest aber jede Person alles, und ein Link macht eine Datei öffentlich.
 5. **Ordnerbaum:** Die Aktionen liegen hinter „⋮“ statt hinter dem Rechtsklick, den es auf dem Telefon nicht gibt. Der Aufklapp-Zustand wird je Bereich gemerkt.
+6. **Versionen im Papierkorb (0.4.0, #10293):**
+   - **Löschen:** Die Versionen gehen mit in den Papierkorb (Pfad mit Präfix `\0papierkorb/<eintrag>/`). Eine neue Datei am alten Ort beginnt mit leerer Geschichte; in AI Brain erbte sie die der gelöschten.
+   - **Zurückholen:** Die Versionen kommen an den Ort, an dem die Datei wirklich landet, auch bei `-wiederhergestellt`.
+   - **Endgültig löschen** (auch über `vault:papierkorb-leeren`) entfernt die Versionen samt abgelegter Dateien. Fehlt der Inhalt im Papierkorb, bleiben sie stehen, denn dann sind sie womöglich die einzige Kopie.
+   - Leere Papierkorb-Ordner werden entfernt.
+   - Eine leere neue Datei bekommt keine leere Version.
+   - **Bestand vor 0.4.0:** `vault:versionen-aufraeumen --trocken` zählt verwaiste Versionen und leere Papierkorb-Ordner. Es gibt nur Zahlen aus, keine Pfade, und schreibt nichts.
 
 ## Tests
 

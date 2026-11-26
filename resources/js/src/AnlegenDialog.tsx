@@ -1,4 +1,4 @@
-import { FileSpreadsheet, FileText, Folder, NotebookPen, Presentation, type LucideIcon } from 'lucide-react';
+import { FileCode, FileSpreadsheet, FileText, Folder, NotebookPen, PenTool, Presentation, type LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
@@ -19,7 +19,7 @@ import { cn } from './ui/utils';
  * Produkt sie anbietet (`formate`) — eine .docx ohne Editor laesst sich nur
  * herunterladen, und das ist kein Anlegen, sondern eine Sackgasse.
  */
-export type Dateiformat = 'md' | 'docx' | 'xlsx' | 'pptx';
+export type Dateiformat = 'md' | 'html' | 'excalidraw' | 'docx' | 'xlsx' | 'pptx';
 
 export interface AnlegenDialogProps {
     offen: boolean;
@@ -45,6 +45,9 @@ interface Formatangabe {
 
 const FORMATE: Record<Dateiformat, Formatangabe> = {
     md: { titel: 'Notiz', vorname: 'Neue Notiz', symbol: NotebookPen },
+    // Zeichnung und HTML bietet AI Brain an (Excalidraw-Editor, HTML-Seiten).
+    excalidraw: { titel: 'Zeichnung', vorname: 'Neue Zeichnung', symbol: PenTool },
+    html: { titel: 'HTML', vorname: 'Neue Seite', symbol: FileCode },
     docx: { titel: 'Dokument', vorname: 'Neues Dokument', symbol: FileText },
     xlsx: { titel: 'Tabelle', vorname: 'Neue Tabelle', symbol: FileSpreadsheet },
     pptx: { titel: 'Präsentation', vorname: 'Neue Präsentation', symbol: Presentation },
@@ -189,7 +192,7 @@ export function AnlegenDialog({ offen, art, ausgang, onSchliessen, onBestaetigen
                     {art === 'datei' && angeboten.length > 1 && (
                         <fieldset className="grid gap-2">
                             <legend className="mb-2 text-sm font-medium">Art</legend>
-                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                            <div className={cn('grid grid-cols-2 gap-2', angeboten.length > 4 ? 'sm:grid-cols-3' : 'sm:grid-cols-4')}>
                                 {angeboten.map((f) => {
                                     const { titel, symbol: Symbol } = FORMATE[f];
                                     const gewaehlt = wirksamesFormat === f && !eigeneEndung;

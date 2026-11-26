@@ -136,4 +136,20 @@ describe('AnlegenDialog', () => {
         expect(pfad).toBe('A/plan.md');
         unmount();
     });
+
+    it('bietet Zeichnung und HTML an, wenn das Produkt sie nennt', async () => {
+        let pfad = '';
+        const { unmount } = render(
+            <AnlegenDialog offen art="datei" ausgang="" formate={['md', 'excalidraw', 'html']} onSchliessen={() => {}} onBestaetigen={async (p) => { pfad = p; }} />,
+        );
+
+        act(() => {
+            document.body.querySelector<HTMLInputElement>('input[value=excalidraw]')!.click();
+        });
+        absenden();
+        await warten();
+
+        expect(pfad).toBe('Neue Zeichnung.excalidraw');
+        unmount();
+    });
 });

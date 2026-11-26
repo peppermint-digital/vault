@@ -1,5 +1,6 @@
 import { Download, Pencil, Save, X } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
+import { EuroOfficeEditor } from './EuroOfficeEditor';
 import { VaultKonflikt, type VaultApi } from './transport';
 import { Button } from './ui/button';
 
@@ -28,17 +29,20 @@ export interface DateiansichtProps {
     renderEditor?: (slot: EditorSlot) => ReactNode;
     renderAnsicht?: (slot: { pfad: string; inhalt: string; rohUrl: string }) => ReactNode;
     onGespeichert?: (pfad: string) => void;
+    /** Office-Dateien im EuroOffice-Editor oeffnen (Server muss eingerichtet sein). */
+    euroOffice?: boolean;
 }
 
 const TEXT = /\.(md|markdown|txt|html?|json|csv|excalidraw)$/i;
 const BILD = /\.(png|jpe?g|gif|webp|svg)$/i;
+const OFFICE = /\.(docx?|xlsx?|pptx?|odt|ods|odp|rtf)$/i;
 
 type Zustand =
     | { art: 'laedt' }
     | { art: 'fehler'; text: string }
     | { art: 'da'; inhalt: string; version: string };
 
-export function Dateiansicht({ api, scope, pfad, darfSchreiben, renderEditor, renderAnsicht, onGespeichert }: DateiansichtProps) {
+export function Dateiansicht({ api, scope, pfad, darfSchreiben, renderEditor, renderAnsicht, onGespeichert, euroOffice = false }: DateiansichtProps) {
     const istText = TEXT.test(pfad);
     const [zustand, setZustand] = useState<Zustand>({ art: 'laedt' });
     const [entwurf, setEntwurf] = useState<string | null>(null);
@@ -106,6 +110,7 @@ export function Dateiansicht({ api, scope, pfad, darfSchreiben, renderEditor, re
         return (
             <div className="grid gap-3 p-4">
                 <h2 className="truncate text-lg font-medium">{name}</h2>
+                {euroOffice && OFFICE.test(pfad) && <EuroOfficeEditor api={api} scope={scope} pfad={pfad} />}
                 {BILD.test(pfad) && <img src={rohUrl} alt={name} className="max-h-[70vh] max-w-full rounded-md border object-contain" />}
                 <div>
                     <Button asChild variant="outline">

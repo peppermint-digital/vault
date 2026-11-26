@@ -9,3 +9,4 @@ export * from './Dateiansicht';
 export * from './VaultBrowser';
 export { cn } from './ui/utils';
 export * from './GeteilteAnsicht';
+export * from './EuroOfficeEditor';

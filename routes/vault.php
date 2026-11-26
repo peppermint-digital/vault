@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Peppermint\Vault\Http\Controllers\DateienController;
+use Peppermint\Vault\Http\Controllers\EuroOfficeController;
 use Peppermint\Vault\Http\Controllers\FreigabenController;
 use Peppermint\Vault\Http\Controllers\PapierkorbController;
 use Peppermint\Vault\Http\Controllers\VersionenController;
@@ -34,3 +35,5 @@ Route::delete('papierkorb/{eintrag}', [PapierkorbController::class, 'entfernen']
 Route::get('freigaben', [FreigabenController::class, 'fuerPfad'])->name('freigaben');
 Route::post('freigaben', [FreigabenController::class, 'anlegen'])->name('freigaben.anlegen');
 Route::delete('freigaben/{freigabe}', [FreigabenController::class, 'zurueckziehen'])->whereNumber('freigabe')->name('freigaben.zurueckziehen');
+
+Route::get('eurooffice/konfiguration', [EuroOfficeController::class, 'konfiguration'])->name('eurooffice.konfiguration');

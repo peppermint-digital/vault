@@ -32,12 +32,14 @@ export interface VaultBrowserProps {
     renderAnsicht?: (slot: { pfad: string; inhalt: string; rohUrl: string }) => ReactNode;
     /** Vorgabe: window.confirm. */
     bestaetigen?: (frage: string) => boolean;
+    /** Office-Dateien im EuroOffice-Editor oeffnen. */
+    euroOffice?: boolean;
 }
 
 type Seitenleiste = 'ansicht' | 'versionen' | 'papierkorb';
 type Dialogzustand = { art: 'datei' | 'ordner' | 'umbenennen'; ausgang: string } | null;
 
-export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, renderEditor, renderAnsicht, bestaetigen }: VaultBrowserProps) {
+export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, renderEditor, renderAnsicht, bestaetigen, euroOffice }: VaultBrowserProps) {
     const [bereich, setBereich] = useState<Bereichsangabe | null>(null);
     const [baum, setBaum] = useState<Baumeintrag[] | null>(null);
     const [pfad, setPfad] = useState(startPfad);
@@ -254,6 +256,7 @@ export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, ren
                                 darfSchreiben={darfSchreiben}
                                 renderEditor={renderEditor}
                                 renderAnsicht={renderAnsicht}
+                                euroOffice={euroOffice}
                             />
                         )}
                         <FreigabeDialog api={api} scope={scope} pfad={pfad} offen={freigabeOffen} onSchliessen={() => setFreigabeOffen(false)} />

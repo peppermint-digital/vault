@@ -63,6 +63,11 @@ class VaultServiceProvider extends ServiceProvider
                 ->middleware((array) config('vault.routen.oeffentlich_middleware', ['web']))
                 ->name((string) config('vault.routen.name', 'vault.api.').'geteilt.')
                 ->group(__DIR__.'/../routes/oeffentlich.php');
+
+            Route::prefix((string) config('vault.eurooffice.praefix', 'vault/eurooffice'))
+                ->middleware(['throttle:120,1'])
+                ->name((string) config('vault.routen.name', 'vault.api.').'eurooffice.')
+                ->group(__DIR__.'/../routes/eurooffice.php');
         }
 
         /*

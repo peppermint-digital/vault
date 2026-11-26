@@ -6,6 +6,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use Peppermint\Vault\EuroOffice\Blankovorlagen;
+use Peppermint\Vault\EuroOffice\Dateiart;
 use Peppermint\Vault\Http\Bereichswahl;
 use Peppermint\Vault\Support\Auslieferung;
 use Peppermint\Vault\Vault;
@@ -81,6 +83,24 @@ class DateienController extends Controller
             $this->vault->ordnerAnlegen($bereich, $daten['path']);
 
             return response()->json(['ok' => true, 'path' => trim($daten['path'], '/')]);
+        }
+
+        // Office-Dateien entstehen als Kopie einer leeren Vorlage (AI Brain #6298):
+        // Eine .xlsx mit null Bytes ist kein Dokument, sondern ein kaputtes Archiv.
+        if (Dateiart::fuer($daten['path']) === Dateiart::OFFICE) {
+            $vorlage = Blankovorlagen::pfadFuer($daten['path']);
+
+            if ($vorlage === null) {
+                $endung = strtolower(pathinfo($daten['path'], PATHINFO_EXTENSION));
+
+                return response()->json(['error' => "Neue .{$endung}-Dateien koennen hier nicht angelegt werden. Moeglich sind "
+                    .implode(', ', array_map(fn (string $e): string => '.'.$e, Blankovorlagen::endungen()))
+                    ." — oeffnen und bearbeiten laesst sich .{$endung} weiterhin."], 422);
+            }
+
+            $pfad = $this->vault->binaerSchreiben($bereich, $daten['path'], $vorlage, $this->autor($request));
+
+            return response()->json(['ok' => true, 'path' => $pfad, 'file_id' => $this->vault->kennung()->id($bereich, $pfad)]);
         }
 
         $pfad = $this->vault->schreiben($bereich, $daten['path'], $daten['content'] ?? '', $this->autor($request));

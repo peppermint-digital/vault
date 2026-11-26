@@ -171,6 +171,10 @@ export function vaultApi(optionen: VaultApiOptionen) {
         papierkorbWiederherstellen: (id: number) => anfrage<{ ok: true; path: string }>('POST', `papierkorb/${id}/wiederherstellen`),
         papierkorbEntfernen: (id: number) => anfrage<{ ok: true }>('DELETE', `papierkorb/${id}`),
 
+        /** Signierte Editor-Konfiguration fuer EuroOffice (503, wenn nicht eingerichtet). */
+        euroOfficeKonfiguration: (scope: string, path: string) =>
+            anfrage<{ apiJsUrl: string; config: Record<string, unknown> }>('GET', 'eurooffice/konfiguration', { scope, path }),
+
         freigaben: (scope: string, path: string) => anfrage<{ shares: Freigabe[] }>('GET', 'freigaben', { scope, path }),
         freigabeAnlegen: (scope: string, path: string, passwort?: string, tage?: number) =>
             anfrage<{ share: Freigabe }>('POST', 'freigaben', { scope }, { path, password: passwort || undefined, expires_in_days: tage }),

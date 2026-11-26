@@ -112,6 +112,27 @@ return [
         'oeffentlich_middleware' => ['web'],
     ],
 
+    /*
+     | EuroOffice (Document Server, OnlyOffice-Bauart). Je Produkt ein eigener
+     | Container und ein eigenes JWT-Geheimnis (F40). Ohne `enabled` und ohne
+     | Geheimnis von mindestens 32 Zeichen gibt es keinen Editor und keinen
+     | Rueckweg — ein offener Rueckweg waere eine Schreibtuer in den Vault.
+     */
+    'eurooffice' => [
+        'enabled' => (bool) env('EUROOFFICE_ENABLED', false),
+        // Adresse, die der BROWSER erreicht.
+        'public_url' => rtrim((string) env('EUROOFFICE_PUBLIC_URL', ''), '/'),
+        // Adresse, die DIESER Server erreicht (leer = public_url).
+        'internal_url' => rtrim((string) env('EUROOFFICE_INTERNAL_URL', ''), '/'),
+        'jwt_secret' => (string) env('EUROOFFICE_JWT_SECRET', ''),
+        'jwt_header' => (string) env('EUROOFFICE_JWT_HEADER', 'Authorization'),
+        // Unsere Adresse, wie der Document Server sie erreicht.
+        'callback_base_url' => rtrim((string) env('EUROOFFICE_CALLBACK_BASE_URL', (string) env('APP_URL', '')), '/'),
+        'timeout_seconds' => (int) env('EUROOFFICE_TIMEOUT', 15),
+        // Praefix der Wege OHNE Sitzung (Datei holen, Rueckweg) — per eigenem Token gesichert.
+        'praefix' => 'vault/eurooffice',
+    ],
+
     'hochladen' => [
         'max_kb' => (int) env('VAULT_UPLOAD_MAX_KB', 51200),
     ],

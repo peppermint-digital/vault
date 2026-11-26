@@ -75,3 +75,26 @@ describe('Dateiansicht', () => {
         unmount();
     });
 });
+
+describe('Dateiansicht mit EuroOffice', () => {
+    it('holt fuer eine Tabelle die signierte Konfiguration und zeigt einen Fehler des Servers lesbar', async () => {
+        const s = falscherServer({ 'GET eurooffice/konfiguration': { status: 503, json: { error: 'EuroOffice ist nicht einsatzbereit.' } } });
+        const api = vaultApi({ basisUrl: '/vault/api', csrfToken: 't', fetch: s.holen });
+        const { container, unmount } = render(<Dateiansicht api={api} scope="private" pfad="plan.xlsx" darfSchreiben euroOffice />);
+        await warten();
+
+        expect(s.mitschrift[0].url).toBe('/vault/api/eurooffice/konfiguration?scope=private&path=plan.xlsx');
+        expect(container.querySelector('[role=alert]')?.textContent).toBe('EuroOffice ist nicht einsatzbereit.');
+        unmount();
+    });
+
+    it('fragt ohne euroOffice gar nicht erst', async () => {
+        const s = falscherServer({});
+        const api = vaultApi({ basisUrl: '/vault/api', csrfToken: 't', fetch: s.holen });
+        const { unmount } = render(<Dateiansicht api={api} scope="private" pfad="plan.xlsx" darfSchreiben />);
+        await warten();
+
+        expect(s.mitschrift).toHaveLength(0);
+        unmount();
+    });
+});

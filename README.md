@@ -23,9 +23,10 @@ Plan und Herkunft: `codingshare/vault-paket-plan-2026-11-26.md`. Der Kern ist au
 | Freigabelinks | `Models\VaultShare` |
 | HTML → Markdown (Umzug der Manager-Notizen) | `Umwandlung\HtmlZuMarkdown` |
 | JSON-Schiene für die Oberfläche | `routes/vault.php`, `Http\Controllers\*` |
-| Oberfläche (npm) | `VaultBrowser`, `Ordnerbaum`, `Dateiansicht`, `Versionsliste`, `Papierkorbliste`, `FreigabeDialog`, `AnlegenDialog`, `vaultApi` |
+| EuroOffice: Konfiguration, Datei, Rückweg, Blankovorlagen | `EuroOffice\*`, `Http\Controllers\EuroOfficeController`, `stubs/office/` |
+| Oberfläche (npm) | `EuroOfficeEditor`, `GeteilteAnsicht`, `VaultBrowser`, `Ordnerbaum`, `Dateiansicht`, `Versionsliste`, `Papierkorbliste`, `FreigabeDialog`, `AnlegenDialog`, `vaultApi` |
 
-**Noch nicht drin, folgt:** die Serverseite für EuroOffice, externe Quellen (SMB), PDF/EPUB-Anmerkungen, Vorschaubilder und MCP-Bausteine.
+**Noch nicht drin, folgt:** externe Quellen (SMB), PDF/EPUB-Anmerkungen, Vorschaubilder und MCP-Bausteine.
 
 ## JSON-Schiene
 
@@ -68,6 +69,16 @@ const api = vaultApi({ basisUrl: '/vault/api', csrfToken: () => document.querySe
   ```
 
   Fehlt die Zeile, gibt es keinen Fehler, die Bausteine sitzen dann nur falsch.
+
+## EuroOffice
+
+Je Produkt gibt es einen eigenen Document Server mit eigenem JWT-Geheimnis (F40), eingestellt in `vault.eurooffice.*` (`EUROOFFICE_*`). Fehlt `enabled` oder ist das Geheimnis kürzer als 32 Zeichen, gibt es keinen Editor und keinen Rückweg.
+
+- `GET vault/api/eurooffice/konfiguration?scope=&path=` liefert mit Sitzung die signierte Konfiguration. Bearbeiten und einen Rückweg gibt es nur mit Schreibrecht.
+- `GET vault/eurooffice/datei/{token}` und `POST vault/eurooffice/rueckweg/{token}` laufen **ohne Sitzung und ohne CSRF**. Gesichert sind sie über unser eigenes signiertes Token, gedrosselt auf 120 Anfragen pro Minute.
+- Der Rückweg glaubt dem Server nie, wohin er schreiben soll: Das Ziel steht in unserem Token. Die Nutzlast muss signiert sein, und Dateien werden nur vom eigenen Document Server geholt (Schutz gegen SSRF). Eine leere oder fehlgeschlagene Antwort überschreibt nichts.
+- **Neu gegenüber AI Brain:** Das Rückweg-Token trägt die Person. Beim Speichern wird über `Vaultrechte` erneut geprüft, ob sie noch schreiben darf.
+- Neue `.docx`, `.xlsx` und `.pptx` entstehen als Kopie der leeren Vorlagen in `stubs/office/`. Die Vorlagen sind mit LibreOffice erzeugt und enthalten keinen Autor.
 
 ## Verträge
 

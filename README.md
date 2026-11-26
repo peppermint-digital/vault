@@ -53,6 +53,12 @@ In jedem Produkt sieht die Vault-Leiste gleich aus, Vorbild ist AI Brain. Die Le
   - Vorgaben: „Vault“ mit `VAULT_UNTERTITEL`; auf der Graph-Seite „Graph“ mit `GRAPH_UNTERTITEL`.
   - Rechts steht nur, was das Produkt als `children` mitgibt, etwa den „Assistent“ in AI Brain.
 
+- **Externe Quellen im `VaultBrowser`** (0.6.0): Ist der `scope` eine Quelle (`extern:<slug>`), arbeitet der Browser im Quellen-Modus.
+  - **Baum:** wird ebenenweise über `quelle/ebene` geladen; ein Ordner lädt beim Aufklappen nach (`Ordnerbaum.onOrdnerOeffnen`).
+  - **Dateien:** Anzeigen, Anlegen, Speichern, Umbenennen, Löschen und Hochladen laufen über `quelle/*`. Der Adapter `fuerQuelle(api)` hält die Schnittstelle gleich.
+  - **Nicht erreichbar:** Antwortet die Quelle nicht, steht das als Hinweis da, statt einer leeren Liste.
+  - **Ausgeblendet**, weil der Speicher nicht dem Vault gehört: Versionen, Papierkorb, Freigaben, Suche, Vorschaubilder, EuroOffice und PDF-Anmerkungen. Gelöschtes ist dort sofort weg.
+
 ## JSON-Schiene
 
 Unter `vault.routen.praefix` (Vorgabe `vault/api`), Middleware `web` + `auth`. Abschalten mit `VAULT_ROUTEN=false`, wenn ein Produkt seine eigenen Controller behält.

@@ -193,7 +193,28 @@ export function vaultApi(optionen: VaultApiOptionen) {
 
         /** Externe Quelle (`extern:<slug>`): genau eine Ebene; `erreichbar: false` statt einer leeren Liste. */
         quelleEbene: (scope: string, path = '') =>
-            anfrage<{ erreichbar: boolean; eintraege: Baumeintrag[] }>('GET', 'quelle/ebene', { scope, path }),
+            anfrage<{ erreichbar: boolean; bereich?: Bereichsangabe; eintraege: Baumeintrag[] }>('GET', 'quelle/ebene', { scope, path }),
+        quelleRohUrl: (scope: string, path: string, herunterladen = false) =>
+            adresse('quelle/roh', { scope, path, download: herunterladen ? 1 : undefined }),
+        quelleDatei: (scope: string, path: string) => anfrage<Dateiinhalt>('GET', 'quelle/datei', { scope, path }),
+        quelleAnlegen: (scope: string, path: string, type: 'file' | 'folder', content = '') =>
+            anfrage<{ ok: true; path: string; file_id?: string | null }>('POST', 'quelle/datei', { scope }, { path, type, content }),
+        quelleSpeichern: (scope: string, path: string, content: string, basisVersion?: string, erzwingen = false) =>
+            anfrage<{ saved: true; version: string }>('PATCH', 'quelle/datei', { scope }, {
+                path,
+                content,
+                base_version: basisVersion,
+                force: erzwingen || undefined,
+            }),
+        quelleLoeschen: (scope: string, path: string) => anfrage<{ ok: true; trash_id: number | null }>('DELETE', 'quelle/datei', { scope }, { path }),
+        quelleVerschieben: (scope: string, from: string, to: string) => anfrage<{ ok: true; path: string }>('POST', 'quelle/verschieben', { scope }, { from, to }),
+        quelleHochladen: (scope: string, datei: File, ordner = '') => {
+            const formular = new FormData();
+            formular.append('file', datei);
+            formular.append('folder', ordner);
+
+            return anfrage<{ path: string; file_id: string | null }>('POST', 'quelle/hochladen', { scope }, formular);
+        },
 
         freigaben: (scope: string, path: string) => anfrage<{ shares: Freigabe[] }>('GET', 'freigaben', { scope, path }),
         freigabeAnlegen: (scope: string, path: string, passwort?: string, tage?: number) =>
@@ -203,6 +224,30 @@ export function vaultApi(optionen: VaultApiOptionen) {
 }
 
 export type VaultApi = ReturnType<typeof vaultApi>;
+
+/** Eine externe Quelle heisst in Anfragen `extern:<slug>` (Bereichsnamen des Pakets). */
+export function istQuellenScope(scope: string): boolean {
+    return scope.startsWith('extern:');
+}
+
+/**
+ * Dieselbe Schnittstelle, aber auf den Wegen fuer externe Quellen (0.6.0).
+ * So arbeiten Dateiansicht, Anlegen, Umbenennen, Loeschen und Hochladen
+ * unveraendert — nur gegen `quelle/*`. Quellen haben keine Versionen, keinen
+ * Papierkorb und keinen ganzen Baum; die blendet der VaultBrowser aus.
+ */
+export function fuerQuelle(api: VaultApi): VaultApi {
+    return {
+        ...api,
+        rohUrl: api.quelleRohUrl,
+        datei: api.quelleDatei,
+        anlegen: api.quelleAnlegen,
+        speichern: api.quelleSpeichern,
+        loeschen: (scope, path) => api.quelleLoeschen(scope, path) as ReturnType<VaultApi['loeschen']>,
+        verschieben: api.quelleVerschieben,
+        hochladen: api.quelleHochladen,
+    };
+}
 
 function fehlertext(status: number, daten: unknown): string {
     if (daten && typeof daten === 'object') {

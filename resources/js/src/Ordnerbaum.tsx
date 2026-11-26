@@ -32,6 +32,11 @@ export interface OrdnerbaumProps {
     leerText?: string;
     /** Adresse eines Vorschaubildes, oder null fuer „Symbol". Fehlt es, bleibt es bei Symbolen. */
     vorschauUrl?: (pfad: string) => string | null;
+    /**
+     * Ein Ordner ist aufgegangen, dessen Inhalt noch nicht geladen ist
+     * (`children` fehlt). Fuer externe Quellen, die ebenenweise laden (0.6.0).
+     */
+    onOrdnerOeffnen?: (pfad: string) => void;
 }
 
 const PRAEFIX = 'peppermint-vault-offen:';
@@ -84,6 +89,14 @@ function Eintrag(props: EintragProps) {
         }
         merken(speicherSchluessel, pfade);
     }, [offen, istOrdner, knoten.path, speicherSchluessel]);
+
+    // Ebenenweise geladene Quellen: Inhalt erst holen, wenn der Ordner aufgeht.
+    const { onOrdnerOeffnen } = props;
+    useEffect(() => {
+        if (istOrdner && offen && knoten.children === undefined) {
+            onOrdnerOeffnen?.(knoten.path);
+        }
+    }, [istOrdner, offen, knoten.children, knoten.path, onOrdnerOeffnen]);
 
     const klick = useCallback(() => {
         if (istOrdner) {

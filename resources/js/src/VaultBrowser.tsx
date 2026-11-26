@@ -1,11 +1,11 @@
 import { FilePlus, FolderPlus, History, Search, Share2, Trash2, Upload } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { AnlegenDialog } from './AnlegenDialog';
 import { Dateiansicht, type DateiansichtProps, type EditorSlot } from './Dateiansicht';
 import { FreigabeDialog } from './FreigabeDialog';
 import { Ordnerbaum } from './Ordnerbaum';
 import { Papierkorbliste } from './Papierkorbliste';
-import type { Bereichsangabe, VaultApi } from './transport';
+import { fuerQuelle, istQuellenScope, type Bereichsangabe, type VaultApi } from './transport';
 import type { Baumeintrag, Suchtreffer } from './typen';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -41,7 +41,12 @@ export interface VaultBrowserProps {
 type Seitenleiste = 'ansicht' | 'versionen' | 'papierkorb';
 type Dialogzustand = { art: 'datei' | 'ordner' | 'umbenennen'; ausgang: string } | null;
 
-export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, renderEditor, renderAnsicht, bestaetigen, euroOffice, renderPdf }: VaultBrowserProps) {
+export function VaultBrowser({ api: grundApi, scope, startPfad = '', onPfadGewechselt, renderEditor, renderAnsicht, bestaetigen, euroOffice, renderPdf }: VaultBrowserProps) {
+    // Externe Quelle (0.6.0): dieselben Bausteine, aber ueber `quelle/*`,
+    // Baum ebenenweise, ohne Versionen, Papierkorb, Freigaben und Suche.
+    const quelle = istQuellenScope(scope);
+    const api = useMemo(() => (quelle ? fuerQuelle(grundApi) : grundApi), [grundApi, quelle]);
+    const [nichtErreichbar, setNichtErreichbar] = useState(false);
     const [bereich, setBereich] = useState<Bereichsangabe | null>(null);
     const [baum, setBaum] = useState<Baumeintrag[] | null>(null);
     const [pfad, setPfad] = useState(startPfad);
@@ -60,19 +65,33 @@ export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, ren
 
     useEffect(() => {
         let ab = false;
-        api.baum(scope)
-            .then((d) => {
-                if (!ab) {
-                    setBereich(d.bereich);
-                    setBaum(d.baum);
+        if (quelle) {
+            grundApi
+                .quelleEbene(scope)
+                .then((d) => {
+                    if (ab) return;
+                    setNichtErreichbar(!d.erreichbar);
+                    setBereich(d.bereich ?? { slug: scope, label: scope.slice('extern:'.length), persoenlich: false, darfSchreiben: false });
+                    setBaum(d.eintraege);
                     setFehler(null);
-                }
-            })
-            .catch((e: Error) => !ab && setFehler(e.message));
+                })
+                .catch((e: Error) => !ab && setFehler(e.message));
+        } else {
+            grundApi
+                .baum(scope)
+                .then((d) => {
+                    if (!ab) {
+                        setBereich(d.bereich);
+                        setBaum(d.baum);
+                        setFehler(null);
+                    }
+                })
+                .catch((e: Error) => !ab && setFehler(e.message));
+        }
         return () => {
             ab = true;
         };
-    }, [api, scope, ladeschluessel]);
+    }, [grundApi, quelle, scope, ladeschluessel]);
 
     const oeffnen = useCallback(
         (neuerPfad: string) => {
@@ -81,6 +100,16 @@ export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, ren
             onPfadGewechselt?.(neuerPfad);
         },
         [onPfadGewechselt],
+    );
+
+    const ebeneLaden = useCallback(
+        (ordner: string) => {
+            grundApi
+                .quelleEbene(scope, ordner)
+                .then((d) => setBaum((vorher) => (vorher === null ? vorher : einsetzen(vorher, ordner, d.eintraege))))
+                .catch((e: Error) => setFehler(e.message));
+        },
+        [grundApi, scope],
     );
 
     async function ausfuehren(arbeit: () => Promise<unknown>) {
@@ -165,10 +194,18 @@ export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, ren
                     )}
                 </div>
 
-                <form onSubmit={suchen} className="relative">
-                    <Search className="pointer-events-none absolute top-2.5 left-2 size-4 text-muted-foreground" />
-                    <Input value={suche} onChange={(e) => setSuche(e.target.value)} placeholder="Suchen…" className="pl-8" aria-label="Im Bereich suchen" />
-                </form>
+                {!quelle && (
+                    <form onSubmit={suchen} className="relative">
+                        <Search className="pointer-events-none absolute top-2.5 left-2 size-4 text-muted-foreground" />
+                        <Input value={suche} onChange={(e) => setSuche(e.target.value)} placeholder="Suchen…" className="pl-8" aria-label="Im Bereich suchen" />
+                    </form>
+                )}
+
+                {quelle && nichtErreichbar && (
+                    <p role="status" className="rounded-md border p-2 text-sm text-muted-foreground">
+                        Diese Quelle ist gerade nicht erreichbar. Die Dateien sind nicht weg — der Speicher antwortet nur nicht.
+                    </p>
+                )}
 
                 {fehler !== null && (
                     <p role="alert" className="rounded-md border border-destructive/40 p-2 text-sm text-destructive">
@@ -204,14 +241,19 @@ export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, ren
                             onUmbenennen={(p) => setDialog({ art: 'umbenennen', ausgang: p })}
                             onLoeschen={loeschen}
                             onHerunterladen={(p) => globalThis.open(api.rohUrl(scope, p, true), '_blank')}
-                            vorschauUrl={(p) => (/\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(p) ? api.vorschauUrl(scope, p) : null)}
+                            vorschauUrl={(p) => (!quelle && /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(p) ? api.vorschauUrl(scope, p) : null)}
+                            onOrdnerOeffnen={quelle ? ebeneLaden : undefined}
                         />
                     )}
                 </div>
 
-                <Button variant="ghost" size="sm" className="justify-start" onClick={() => setAnsicht('papierkorb')}>
-                    <Trash2 /> Papierkorb
-                </Button>
+                {quelle ? (
+                    <p className="px-2 text-xs text-muted-foreground">Externe Quelle: keine Versionen, kein Papierkorb — Gelöschtes ist sofort weg.</p>
+                ) : (
+                    <Button variant="ghost" size="sm" className="justify-start" onClick={() => setAnsicht('papierkorb')}>
+                        <Trash2 /> Papierkorb
+                    </Button>
+                )}
             </aside>
 
             <section className="min-w-0 flex-1 rounded-md border">
@@ -237,10 +279,12 @@ export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, ren
                             <Button size="sm" variant={ansicht === 'ansicht' ? 'secondary' : 'ghost'} onClick={() => setAnsicht('ansicht')}>
                                 Datei
                             </Button>
-                            <Button size="sm" variant={ansicht === 'versionen' ? 'secondary' : 'ghost'} onClick={() => setAnsicht('versionen')}>
-                                <History /> Versionen
-                            </Button>
-                            {darfSchreiben && (
+                            {!quelle && (
+                                <Button size="sm" variant={ansicht === 'versionen' ? 'secondary' : 'ghost'} onClick={() => setAnsicht('versionen')}>
+                                    <History /> Versionen
+                                </Button>
+                            )}
+                            {darfSchreiben && !quelle && (
                                 <Button size="sm" variant="ghost" onClick={() => setFreigabeOffen(true)}>
                                     <Share2 /> Freigeben
                                 </Button>
@@ -259,8 +303,8 @@ export function VaultBrowser({ api, scope, startPfad = '', onPfadGewechselt, ren
                                 darfSchreiben={darfSchreiben}
                                 renderEditor={renderEditor}
                                 renderAnsicht={renderAnsicht}
-                                euroOffice={euroOffice}
-                                renderPdf={renderPdf}
+                                euroOffice={euroOffice && !quelle}
+                                renderPdf={quelle ? undefined : renderPdf}
                                 epubLesefassungVorhanden={(p) => baum !== null && istDateiIn(baum, p)}
                             />
                         )}
@@ -312,6 +356,16 @@ function namenIn(baum: Baumeintrag[] | null, ordner: string): string[] {
 function ordnerVon(pfad: string): string {
     const i = pfad.lastIndexOf('/');
     return i === -1 ? '' : pfad.slice(0, i);
+}
+
+/** Die geladene Ebene eines Ordners in den Baum haengen (ebenenweise Quellen). */
+function einsetzen(baum: Baumeintrag[], ordner: string, kinder: Baumeintrag[]): Baumeintrag[] {
+    return baum.map((e) => {
+        if (e.type !== 'folder') return e;
+        if (e.path === ordner) return { ...e, children: kinder };
+        if (e.children && ordner.startsWith(e.path + '/')) return { ...e, children: einsetzen(e.children, ordner, kinder) };
+        return e;
+    });
 }
 
 function istDateiIn(baum: Baumeintrag[], pfad: string): boolean {

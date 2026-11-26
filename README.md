@@ -69,6 +69,9 @@ In jedem Produkt sieht die Vault-Leiste gleich aus, Vorbild ist AI Brain. Die Le
   - „Ordner hochladen“ gibt es oben und im ⋮ eines Ordners. Unterordner bleiben erhalten.
   - Hochgeladen wird nacheinander; der Server legt fehlende Ordner selbst an.
   - Ohne Schreibrecht gibt es weder Ablage noch Knopf.
+- **Quellen** (0.6.4):
+  - `Navigation::bereiche()` meldet bei Quellen `erreichbar`, also eingeschaltet und eingehängt. Bei einer nicht erreichbaren Quelle zeigt der `Bereichsreiter` ein Warndreieck und sagt es in der Beschreibungszeile.
+  - Der Graph einer Quelle (`GET verweise?scope=extern:…`) antwortet mit 404 „Quellen haben keinen Graphen.“. Bisher kam ein Fehler 500 aus der Ablage.
 - **Dateien ohne Ordner** (0.6.3): `vault.hochladen.ohne_ordner` legt fest, wohin eine Datei geht, die ohne Ordner hochgeladen wird. Das betrifft den Knopf oben und das Ziehen, wenn kein Ordner offen ist.
   - Vorgabe ist `_attachments`. So macht es AI Brain: Dort zeigt der Steckbrief-Link des Avatars auf diesen Ordner, und ein hochgeladenes Dokument soll ihn ohne weiteres Zutun finden.
   - Ein Produkt ohne Steckbrief setzt `''`; dann landet die Datei oben im Bereich. Der Manager tut das.

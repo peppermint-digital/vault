@@ -16,6 +16,7 @@ use Peppermint\Vault\Bereich;
 use Peppermint\Vault\Contracts\Vaultrechte;
 use Peppermint\Vault\Models\VaultSource;
 use Peppermint\Vault\Models\VaultVersion;
+use Peppermint\Vault\Navigation;
 use Peppermint\Vault\Quellen\Quellen;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -128,4 +129,27 @@ it('gibt es ohne vault.quellen nicht', function () {
     config(['vault.quellen' => false]);
 
     $this->actingAs($this->editor)->getJson('/vault/api/baum?scope=extern:grafik')->assertNotFound();
+});
+
+/*
+ * 0.6.4 (aibrain-e1 F52b): Quellen haben keinen Graphen — 404 statt 500 aus
+ * der Ablage. Und der Bereichsreiter erfaehrt, ob eine Quelle erreichbar ist.
+ */
+it('antwortet beim Graphen einer Quelle mit 404 statt 500', function () {
+    $this->actingAs($this->editor)->getJson('/vault/api/verweise?scope=extern:grafik')
+        ->assertNotFound()
+        ->assertJsonPath('message', 'Quellen haben keinen Graphen.');
+    $this->actingAs($this->editor)->getJson('/vault/api/verweise?scope=extern:grafik&path=liste.md')->assertNotFound();
+});
+
+it('sagt im Bereichsreiter, ob eine Quelle erreichbar ist, und nur bei Quellen', function () {
+    $bereiche = collect(app(Navigation::class)->bereiche($this->editor))->keyBy('slug');
+
+    expect($bereiche['extern:grafik']['erreichbar'] ?? null)->toBeTrue()
+        ->and($bereiche['extern:weg']['erreichbar'] ?? null)->toBeFalse()
+        ->and($bereiche['private'])->not->toHaveKey('erreichbar');
+
+    // Bricht die Einhaengung weg, sagt der Reiter es beim naechsten Laden.
+    $this->quelle->forceFill(['mount_path' => $this->nichtEingehaengt])->save();
+    expect(collect(app(Navigation::class)->bereiche($this->editor))->keyBy('slug')['extern:grafik']['erreichbar'])->toBeFalse();
 });

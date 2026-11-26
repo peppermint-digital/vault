@@ -5,6 +5,7 @@ namespace Peppermint\Vault;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Peppermint\Vault\Contracts\Bereichsnamen;
 use Peppermint\Vault\Contracts\Vaultrechte;
+use Peppermint\Vault\Models\VaultSource;
 
 /**
  * Die Eintraege der Vault-Leiste — EINE Liste fuer alle Produkte (0.5.0,
@@ -59,7 +60,7 @@ class Navigation
      * der Firmen-Bereich, dann die Raeume — nur, was die Person lesen darf.
      * `slug` ist der `scope`-Wert der Anfragen, wie `Bereichswahl::slug()`.
      *
-     * @return list<array{slug: string, label: string, persoenlich: bool, art: 'persoenlich'|'global'|'raum'|'quelle', darfSchreiben: bool}>
+     * @return list<array{slug: string, label: string, persoenlich: bool, art: 'persoenlich'|'global'|'raum'|'quelle', darfSchreiben: bool, erreichbar?: bool}>
      */
     public function bereiche(?Authenticatable $person): array
     {
@@ -86,12 +87,18 @@ class Navigation
                 'persoenlich' => $bereich->istPersoenlich(),
                 'art' => $art,
                 'darfSchreiben' => $this->rechte->darfSchreiben($person, $bereich),
-            ]];
+            ] + ($bereich->istQuelle() ? ['erreichbar' => self::erreichbar($bereich)] : [])];
         }
 
         // Stabil nach Rang: Reihenfolge innerhalb der Raeume bleibt die der Rechte.
         usort($liste, fn (array $a, array $b): int => $a[0] <=> $b[0]);
 
         return array_map(fn (array $paar): array => $paar[1], $liste);
+    }
+
+    /** Eine Quelle ist erreichbar, wenn sie eingeschaltet UND eingehaengt ist (0.6.4). */
+    private static function erreichbar(Bereich $bereich): bool
+    {
+        return VaultSource::query()->where('slug', $bereich->schluessel)->first()?->istErreichbar() ?? false;
     }
 }

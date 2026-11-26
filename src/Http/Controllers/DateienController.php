@@ -182,6 +182,9 @@ class DateienController extends Controller
     public function verweise(Request $request): JsonResponse
     {
         $bereich = $this->wahl->aus($request);
+        // Fremder Speicher hat keinen Verweis-Index; ohne diese Pruefung faellt
+        // der Aufruf mit 500 in die Ablage (0.6.4, aibrain-e1 F52b).
+        abort_if($bereich->istQuelle(), 404, 'Quellen haben keinen Graphen.');
         $pfad = trim((string) $request->query('path', ''));
 
         return response()->json($pfad === ''

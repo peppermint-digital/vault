@@ -1,4 +1,4 @@
-import { Globe, HardDrive, Lock, Users, type LucideIcon } from 'lucide-react';
+import { Globe, HardDrive, Lock, TriangleAlert, Users, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Button } from './ui/button';
 import { cn } from './ui/utils';
@@ -23,6 +23,8 @@ export interface Bereichsreiterpunkt {
     art?: 'persoenlich' | 'global' | 'raum' | 'quelle';
     persoenlich?: boolean;
     darfSchreiben?: boolean;
+    /** Nur bei Quellen (0.6.4): `false` = ausgeschaltet oder nicht eingehaengt. */
+    erreichbar?: boolean;
 }
 
 export interface BereichsreiterProps {
@@ -49,6 +51,9 @@ function beschreibung(bereich: Bereichsreiterpunkt): string {
     if (art === 'persoenlich') {
         return 'Dein persönlicher Vault — nur du siehst und bearbeitest ihn.';
     }
+    if (art === 'quelle' && bereich.erreichbar === false) {
+        return 'Extern angebundene Quelle — gerade nicht erreichbar. Die Dateien sind nicht weg, der Speicher antwortet nur nicht.';
+    }
     const was =
         art === 'quelle'
             ? 'Extern angebundene Quelle — keine Versionen, kein Papierkorb: Gelöschtes ist dort sofort weg. '
@@ -72,7 +77,8 @@ export function Bereichsreiter({ bereiche, aktiv, onWechsel, children, className
                 <div className="flex flex-wrap gap-1" role="group" aria-label="Bereich">
                     {bereiche.map((bereich) => {
                         const gewaehlt = bereich.slug === aktiv;
-                        const Symbol = SYMBOL[artVon(bereich)];
+                        const nichtErreichbar = artVon(bereich) === 'quelle' && bereich.erreichbar === false;
+                        const Symbol = nichtErreichbar ? TriangleAlert : SYMBOL[artVon(bereich)];
                         return (
                             <Button
                                 key={bereich.slug === '' ? '__persoenlich' : bereich.slug}
@@ -82,8 +88,9 @@ export function Bereichsreiter({ bereiche, aktiv, onWechsel, children, className
                                 aria-pressed={gewaehlt}
                                 onClick={() => !gewaehlt && onWechsel(bereich.slug)}
                                 className="gap-1"
+                                title={nichtErreichbar ? 'Gerade nicht erreichbar' : undefined}
                             >
-                                <Symbol className="h-3 w-3" />
+                                <Symbol className={cn('h-3 w-3', nichtErreichbar && 'text-amber-500')} aria-label={nichtErreichbar ? 'nicht erreichbar' : undefined} />
                                 {bereich.label}
                             </Button>
                         );

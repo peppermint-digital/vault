@@ -112,4 +112,28 @@ describe('renderAnsicht-Slot', () => {
         expect(slots.at(-1)?.speichern).toBeUndefined();
         unmount();
     });
+
+    it('öffnet einen Wikilink nach der Regel des Graphen und meldet Unbekanntes', async () => {
+        const { slots, pfade, container, unmount } = mitSlot(true, () => ({ json: { saved: true, version: 'v2' } }));
+        await warten();
+        await warten();
+
+        let ok = false;
+        act(() => {
+            ok = slots.at(-1)!.verweisOeffnen('[[Ziel|zum Ziel]]');
+        });
+        await warten();
+        await warten();
+        expect(ok).toBe(true);
+        expect(pfade.at(-1)).toBe('ziel.md');
+        expect(container.querySelector('[data-ansicht]')?.textContent).toBe('# Ziel');
+
+        let unbekannt = true;
+        act(() => {
+            unbekannt = slots.at(-1)!.verweisOeffnen('[[Gibt es nicht]]');
+        });
+        expect(unbekannt).toBe(false);
+        expect(pfade.at(-1)).toBe('ziel.md');
+        unmount();
+    });
 });

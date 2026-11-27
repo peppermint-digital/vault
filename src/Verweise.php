@@ -73,16 +73,7 @@ class Verweise
             }
         }
 
-        $register = [];
-        $muster = '/\.('.implode('|', Vault::INDIZIERT).')$/i';
-        foreach (array_keys($dateien) as $rel) {
-            $ohne = pathinfo($rel, PATHINFO_FILENAME);
-            $endung = strtolower(pathinfo($rel, PATHINFO_EXTENSION));
-            $register[strtolower($rel)] = $rel;
-            $register[strtolower(preg_replace($muster, '', $rel) ?? '')] = $rel;
-            $register[strtolower($ohne)] = $rel;
-            $register[strtolower($ohne.'.'.$endung)] = $rel;
-        }
+        $register = self::register(array_keys($dateien));
 
         $zaehler = array_fill_keys(array_keys($dateien), 0);
         $kanten = [];
@@ -97,7 +88,7 @@ class Verweise
             $praefix = ($eltern === '.' || $eltern === '') ? '' : $eltern.'/';
 
             foreach ($treffer[1] as $roh) {
-                $ziel = $this->aufloesen(trim($roh), $praefix, $register);
+                $ziel = self::aufloesen(trim($roh), $praefix, $register);
 
                 if ($ziel !== null && $ziel !== $rel && ! isset($gesehen[$rel.'→'.$ziel])) {
                     $gesehen[$rel.'→'.$ziel] = true;
@@ -130,7 +121,51 @@ class Verweise
      *
      * @param  array<string, string>  $register
      */
-    private function aufloesen(string $link, string $praefix, array $register): ?string
+    /**
+     * Namen -> Pfad, in der Reihenfolge der Pfade (spaetere gewinnen bei gleichem
+     * Namen - wie bisher, weil File::allFiles nach Namen sortiert liefert).
+     *
+     * @param  list<string>  $pfade
+     * @return array<string, string>
+     */
+    public static function register(array $pfade): array
+    {
+        $register = [];
+        $muster = '/\.('.implode('|', Vault::INDIZIERT).')$/i';
+        foreach ($pfade as $rel) {
+            $ohne = pathinfo($rel, PATHINFO_FILENAME);
+            $endung = strtolower(pathinfo($rel, PATHINFO_EXTENSION));
+            $register[strtolower($rel)] = $rel;
+            $register[strtolower(preg_replace($muster, '', $rel) ?? '')] = $rel;
+            $register[strtolower($ohne)] = $rel;
+            $register[strtolower($ohne.'.'.$endung)] = $rel;
+        }
+
+        return $register;
+    }
+
+    /**
+     * Bequem fuer Tests und Produkte: Ziel eines [[Links]] aus der Datei $von.
+     *
+     * @param  list<string>  $pfade  alle indizierten Dateien des Bereichs
+     */
+    public static function zielFuer(array $pfade, string $von, string $link): ?string
+    {
+        sort($pfade, SORT_STRING);
+        $eltern = dirname($von);
+        $praefix = ($eltern === '.' || $eltern === '') ? '' : $eltern.'/';
+
+        return self::aufloesen(trim($link), $praefix, self::register($pfade));
+    }
+
+    /**
+     * Wohin ein [[Link]] zeigt - dieselbe Regel fuer Graph, „Verweise hierher" und
+     * (seit 0.7.6) den Klick im Browser (resources/js/src/verweisZiel.ts ist der
+     * wortgleiche Port; gemeinsame Faelle in tests/fixtures/verweis-ziele.json).
+     *
+     * @param  array<string, string>  $register
+     */
+    public static function aufloesen(string $link, string $praefix, array $register): ?string
     {
         $mitEndung = function (string $kandidat) use ($register): ?string {
             if (isset($register[$kandidat])) {
@@ -151,7 +186,7 @@ class Verweise
         }
 
         if ($praefix !== '' && str_contains($link, '/')) {
-            $normal = $this->normalisieren($praefix.$link);
+            $normal = self::normalisieren($praefix.$link);
             if ($normal !== null && ($ziel = $mitEndung(strtolower($normal))) !== null) {
                 return $ziel;
             }
@@ -167,7 +202,7 @@ class Verweise
         return $mitEndung(strtolower(basename($link)));
     }
 
-    private function normalisieren(string $pfad): ?string
+    private static function normalisieren(string $pfad): ?string
     {
         $teile = [];
         foreach (explode('/', $pfad) as $segment) {

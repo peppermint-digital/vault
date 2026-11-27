@@ -1,5 +1,6 @@
 export * from './typen';
 export * from './transport';
+export * from './verweisZiel';
 export * from './Ordnerbaum';
 export * from './AnlegenDialog';
 export * from './Versionsliste';

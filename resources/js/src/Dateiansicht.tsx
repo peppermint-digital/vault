@@ -40,6 +40,12 @@ export interface AnsichtSlot {
     scope: string;
     oeffnen: (pfad: string) => void;
     speichern?: (inhalt: string) => Promise<void>;
+    /**
+     * Einen [[Wikilink]] (oder `Name`, `ordner/Name`, `../Name`) aus dieser Datei heraus
+     * oeffnen - aufgeloest nach derselben Regel wie Graph und „Verweise hierher" (0.7.6).
+     * `false`: nicht gefunden, das Produkt zeigt einen Hinweis.
+     */
+    verweisOeffnen: (link: string) => boolean;
 }
 
 export interface AutoSpeichern {
@@ -63,6 +69,8 @@ export interface DateiansichtProps {
     onGespeichert?: (pfad: string) => void;
     /** Eine andere Datei oeffnen (0.7.3) - der VaultBrowser reicht sein `oeffnen` herein. */
     onOeffnen?: (pfad: string) => void;
+    /** Einen Wikilink aus dieser Datei oeffnen (0.7.6) - der VaultBrowser loest ihn im Baum auf. */
+    onVerweis?: (link: string) => boolean;
     /**
      * Automatisch speichern, waehrend bearbeitet wird (0.7.4, Vorgabe aus). Fuer Dateien,
      * deren Pfad zu `dateien` passt (Vorgabe: Zeichnungen), `nachMs` nach der letzten
@@ -99,6 +107,7 @@ export function Dateiansicht({
     renderAnsicht,
     onGespeichert,
     onOeffnen,
+    onVerweis,
     autoSpeichern,
     euroOffice = false,
     renderPdf,
@@ -361,6 +370,7 @@ export function Dateiansicht({
                     rohUrl,
                     scope,
                     oeffnen: (ziel) => onOeffnen?.(ziel),
+                    verweisOeffnen: (link) => onVerweis?.(link) ?? false,
                     speichern: darfSchreiben ? ansichtSpeichern : undefined,
                 })
             ) : (

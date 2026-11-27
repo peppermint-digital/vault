@@ -8,6 +8,7 @@ import { Ordnerbaum, type OrdnerbaumProps } from './Ordnerbaum';
 import { LISTE_MAX, LISTE_MIN, useListenbreite } from './listenbreite';
 import { Papierkorbliste } from './Papierkorbliste';
 import { Rueckverweise } from './Rueckverweise';
+import { verweisZiel } from './verweisZiel';
 import { fuerQuelle, istQuellenScope, type Bereichsangabe, type VaultApi } from './transport';
 import type { Baumeintrag, Suchtreffer } from './typen';
 import { Button } from './ui/button';
@@ -559,6 +560,13 @@ export function VaultBrowser({
                                 renderEditor={renderEditor}
                                 renderAnsicht={renderAnsicht}
                                 onOeffnen={oeffnen}
+                                onVerweis={(link) => {
+                                    const ziel = baum ? verweisZiel(baum, pfad, link) : null;
+                                    if (ziel !== null) {
+                                        oeffnen(ziel);
+                                    }
+                                    return ziel !== null;
+                                }}
                                 autoSpeichern={autoSpeichern}
                                 euroOffice={euroOffice}
                                 // Auch in Quellen (0.7.2): das Produkt entscheidet, was es dort zeigt (AI Brain: eigener Betrachter).

@@ -1,0 +1,153 @@
+{
+    "hinweis": "Erwartete Ziele aus Verweise::zielFuer (PHP, Referenz). JS-Port verweisZiel.ts muss gleich antworten. Neu erzeugen nur, wenn sich die PHP-Regel bewusst aendert.",
+    "dateien": [
+        "Kundenportal.md",
+        "Projekte/Kundenportal.md",
+        "Projekte/Website.md",
+        "Projekte/Unterordner/Plan.md",
+        "Besprechungen/2026-11-27 Abstimmung.md",
+        "Besprechungen/index.md",
+        "Wissen/Preise.HTML",
+        "Wissen/Glossar.md",
+        "Archiv/Website.md",
+        "Notiz mit Ümlaut.md",
+        "bild.png"
+    ],
+    "faelle": [
+        {
+            "von": "Projekte/Website.md",
+            "link": "Kundenportal",
+            "ziel": "Projekte/Kundenportal.md"
+        },
+        {
+            "von": "Projekte/Website.md",
+            "link": "kundenportal",
+            "ziel": "Projekte/Kundenportal.md"
+        },
+        {
+            "von": "Projekte/Website.md",
+            "link": "Kundenportal.md",
+            "ziel": "Projekte/Kundenportal.md"
+        },
+        {
+            "von": "Besprechungen/index.md",
+            "link": "Kundenportal",
+            "ziel": "Projekte/Kundenportal.md"
+        },
+        {
+            "von": "Besprechungen/index.md",
+            "link": "Website",
+            "ziel": "Projekte/Website.md"
+        },
+        {
+            "von": "Projekte/Website.md",
+            "link": "Unterordner/Plan",
+            "ziel": "Projekte/Unterordner/Plan.md"
+        },
+        {
+            "von": "Projekte/Unterordner/Plan.md",
+            "link": "../Website",
+            "ziel": "Projekte/Website.md"
+        },
+        {
+            "von": "Projekte/Unterordner/Plan.md",
+            "link": "../../Kundenportal",
+            "ziel": "Projekte/Kundenportal.md"
+        },
+        {
+            "von": "Projekte/Unterordner/Plan.md",
+            "link": "../../../zuweit",
+            "ziel": null
+        },
+        {
+            "von": "Projekte/Website.md",
+            "link": "Wissen/Preise",
+            "ziel": "Wissen/Preise.HTML"
+        },
+        {
+            "von": "Projekte/Website.md",
+            "link": "Preise",
+            "ziel": "Wissen/Preise.HTML"
+        },
+        {
+            "von": "Projekte/Website.md",
+            "link": "preise.html",
+            "ziel": "Wissen/Preise.HTML"
+        },
+        {
+            "von": "Projekte/Website.md",
+            "link": "Glossar",
+            "ziel": "Wissen/Glossar.md"
+        },
+        {
+            "von": "Kundenportal.md",
+            "link": "index",
+            "ziel": "Besprechungen/index.md"
+        },
+        {
+            "von": "Kundenportal.md",
+            "link": "Besprechungen/index",
+            "ziel": "Besprechungen/index.md"
+        },
+        {
+            "von": "Kundenportal.md",
+            "link": "2026-11-27 Abstimmung",
+            "ziel": "Besprechungen/2026-11-27 Abstimmung.md"
+        },
+        {
+            "von": "Kundenportal.md",
+            "link": "Gibt es nicht",
+            "ziel": null
+        },
+        {
+            "von": "Kundenportal.md",
+            "link": "notiz mit ümlaut",
+            "ziel": null
+        },
+        {
+            "von": "Kundenportal.md",
+            "link": "bild.png",
+            "ziel": null
+        },
+        {
+            "von": "Kundenportal.md",
+            "link": "Projekte/Unterordner/Plan.md",
+            "ziel": "Projekte/Unterordner/Plan.md"
+        },
+        {
+            "von": "Archiv/Website.md",
+            "link": "Website",
+            "ziel": "Projekte/Website.md"
+        },
+        {
+            "von": "Kundenportal.md",
+            "link": "  Glossar  ",
+            "ziel": "Wissen/Glossar.md"
+        },
+        {
+            "von": "Kundenportal.md",
+            "link": "Notiz mit Ümlaut",
+            "ziel": "Notiz mit Ümlaut.md"
+        },
+        {
+            "von": "Projekte/Website.md",
+            "link": "Website",
+            "ziel": "Projekte/Website.md"
+        },
+        {
+            "von": "Kundenportal.md",
+            "link": "Wissen/",
+            "ziel": null
+        },
+        {
+            "von": "Kundenportal.md",
+            "link": "Falsch/Glossar",
+            "ziel": "Wissen/Glossar.md"
+        },
+        {
+            "von": "Projekte/Unterordner/Plan.md",
+            "link": "../../../Archiv/Website",
+            "ziel": "Projekte/Website.md"
+        }
+    ]
+}

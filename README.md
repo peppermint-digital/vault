@@ -69,6 +69,15 @@ In jedem Produkt sieht die Vault-Leiste gleich aus, Vorbild ist AI Brain. Die Le
   - „Ordner hochladen“ gibt es oben und im ⋮ eines Ordners. Unterordner bleiben erhalten.
   - Hochgeladen wird nacheinander; der Server legt fehlende Ordner selbst an.
   - Ohne Schreibrecht gibt es weder Ablage noch Knopf.
+- **Wikilinks öffnen** (0.7.6, #10335):
+  - `verweisZiel(baum, vonPfad, link)` und `verweisZielIn(pfade, …)` sind der wortgleiche JS-Port von `Verweise::aufloesen`. Klick, Graph und „Verweise hierher“ meinen damit dieselbe Datei.
+  - Die gemeinsamen Fälle stehen in `tests/fixtures/verweis-ziele.json`; der PHP- und der JS-Test prüfen beide dagegen.
+  - Neu im `AnsichtSlot`: `verweisOeffnen(link): boolean` (`false` heißt nicht gefunden).
+  - **Eigenheiten der Regel**, absichtlich mitportiert:
+    - Groß/klein nur für A–Z (PHP `strtolower`).
+    - Bei gleichem Namen gewinnt die nach Pfad spätere Datei.
+    - Ein relativer Pfad wie `../X` kann auf eine gleichnamige Datei in einem Unterordner fallen.
+  - In PHP neu: `Verweise::register()`, `Verweise::aufloesen()` (öffentlich, statisch) und `Verweise::zielFuer()`.
 - **Ergänzungen** (0.7.5, „keine Funktion geht verloren“):
   - **`baumBreiteSchluessel`:** localStorage-Schlüssel, unter dem die Listenbreite als reine Zahl steht. AI Brain gibt `ai-brain-vault-sidebar-w` an, damit die alte Breite bleibt. Ohne Angabe nutzt das Paket einen eigenen Schlüssel. Das 0.7.4-Format gilt nicht mehr; 0.7.4 war nirgends ausgerollt.
   - **Handy, für alle Produkte:**

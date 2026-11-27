@@ -69,6 +69,18 @@ In jedem Produkt sieht die Vault-Leiste gleich aus, Vorbild ist AI Brain. Die Le
   - „Ordner hochladen“ gibt es oben und im ⋮ eines Ordners. Unterordner bleiben erhalten.
   - Hochgeladen wird nacheinander; der Server legt fehlende Ordner selbst an.
   - Ohne Schreibrecht gibt es weder Ablage noch Knopf.
+- **Dateiliste und automatisches Speichern** (0.7.4):
+  - **Dateiliste:**
+    - Auf breiten Bildschirmen lässt sich die Breite am Trenner ziehen (200–600 px, Pfeiltasten ±16, Doppelklick = Vorgabe 288).
+    - Der Knopf oben links klappt die Liste ein und wieder auf.
+    - Beides merkt sich der Browser je Person (`localStorage`, bei gesperrtem Speicher nur für die Sitzung).
+    - Auf dem Handy bleibt alles wie bisher.
+    - Das Produkt muss `node_modules/@peppermint-digital/vault/dist` als Tailwind-`@source` einlesen (Klasse `md:w-[var(--vault-liste-breite)]`).
+  - **`autoSpeichern={{ dateien?, nachMs? }}`** (Vorgabe aus):
+    - Wirkt, während eine passende Datei bearbeitet wird. Vorgabe für `dateien` sind Zeichnungen; erlaubt sind ein Muster oder eine Funktion `(pfad) => boolean`.
+    - Gespeichert wird `nachMs` (Vorgabe 2000) nach der letzten Änderung, über denselben Weg wie „Speichern“, mit Version als Basis. Der Editor bleibt offen.
+    - Ein Konflikt hält das Speichern an und zeigt den Kasten.
+    - Beim Verlassen der Datei wird Offenes sofort gespeichert.
 - **Ansichts-Slot mit Navigation und Speichern** (0.7.3, aibrain-e1):
   - `renderAnsicht` bekommt zusätzlich `scope`, `oeffnen(pfad)` und `speichern(inhalt)`, rein additiv.
   - `oeffnen` öffnet eine Datei wie ein Klick im Baum, etwa für Wikilinks.

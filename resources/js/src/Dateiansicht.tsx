@@ -1,5 +1,5 @@
 import { Download, Pencil, Save, X } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { EpubAnnotator } from './anmerkungen/EpubAnnotator';
 import { EuroOfficeEditor } from './EuroOfficeEditor';
 import { VaultKonflikt, type VaultApi } from './transport';
@@ -42,6 +42,12 @@ export interface AnsichtSlot {
     speichern?: (inhalt: string) => Promise<void>;
 }
 
+export interface AutoSpeichern {
+    /** Welche Dateien: Muster oder Entscheidung je Pfad. Vorgabe: Zeichnungen (`.excalidraw`). */
+    dateien?: RegExp | ((pfad: string) => boolean);
+    nachMs?: number;
+}
+
 export interface DateiansichtProps {
     api: VaultApi;
     scope: string;
@@ -52,6 +58,13 @@ export interface DateiansichtProps {
     onGespeichert?: (pfad: string) => void;
     /** Eine andere Datei oeffnen (0.7.3) - der VaultBrowser reicht sein `oeffnen` herein. */
     onOeffnen?: (pfad: string) => void;
+    /**
+     * Automatisch speichern, waehrend bearbeitet wird (0.7.4, Vorgabe aus). Fuer Dateien,
+     * deren Pfad zu `dateien` passt (Vorgabe: Zeichnungen), `nachMs` nach der letzten
+     * Aenderung (Vorgabe 2000) - ueber denselben Weg wie „Speichern", der Editor bleibt
+     * offen. Konflikt haelt es an. Beim Verlassen mit ungespeicherter Aenderung sofort.
+     */
+    autoSpeichern?: AutoSpeichern;
     /** Office-Dateien im EuroOffice-Editor oeffnen (Server muss eingerichtet sein). */
     euroOffice?: boolean;
     /**
@@ -81,6 +94,7 @@ export function Dateiansicht({
     renderAnsicht,
     onGespeichert,
     onOeffnen,
+    autoSpeichern,
     euroOffice = false,
     renderPdf,
     epubLesefassungVorhanden,
@@ -146,6 +160,55 @@ export function Dateiansicht({
             setSpeichert(false);
         }
     }
+
+    // Automatisch speichern (0.7.4): der Editor bleibt offen, der Entwurf bleibt.
+    const autoDateien = autoSpeichern?.dateien ?? /\.excalidraw$/i;
+    const autoAn = darfSchreiben && autoSpeichern !== undefined && (typeof autoDateien === 'function' ? autoDateien(pfad) : autoDateien.test(pfad));
+    const stand = useRef({ entwurf, zustand, konflikt, speichert });
+    stand.current = { entwurf, zustand, konflikt, speichert };
+
+    const autoJetzt = useCallback(async () => {
+        const { entwurf: e, zustand: z, konflikt: k } = stand.current;
+        if (e === null || z.art !== 'da' || e === z.inhalt || k !== null) {
+            return;
+        }
+        setSpeichert(true);
+        try {
+            const d = await api.speichern(scope, pfad, e, z.version, false);
+            setZustand({ art: 'da', inhalt: e, version: d.version });
+            setMeldung(`Automatisch gespeichert ${new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`);
+            onGespeichert?.(pfad);
+        } catch (fehler) {
+            if (fehler instanceof VaultKonflikt) {
+                setKonflikt(fehler);
+            } else {
+                setMeldung((fehler as Error).message);
+            }
+        } finally {
+            setSpeichert(false);
+        }
+    }, [api, scope, pfad, onGespeichert]);
+
+    useEffect(() => {
+        if (!autoAn || entwurf === null || zustand.art !== 'da' || entwurf === zustand.inhalt || konflikt !== null || speichert) {
+            return;
+        }
+        const t = setTimeout(() => void autoJetzt(), autoSpeichern?.nachMs ?? 2000);
+        return () => clearTimeout(t);
+    }, [autoAn, entwurf, zustand, konflikt, speichert, autoJetzt, autoSpeichern?.nachMs]);
+
+    // Beim Verlassen (Dateiwechsel, Schliessen) nichts verlieren: offene Aenderung sofort senden.
+    useEffect(() => {
+        if (!autoAn) {
+            return;
+        }
+        return () => {
+            const { entwurf: e, zustand: z, konflikt: k } = stand.current;
+            if (e !== null && z.art === 'da' && e !== z.inhalt && k === null) {
+                void api.speichern(scope, pfad, e, z.version, false).catch(() => {});
+            }
+        };
+    }, [autoAn, api, scope, pfad]);
 
     async function speichern(erzwingen = false) {
         if (entwurf === null) {

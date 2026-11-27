@@ -1,10 +1,11 @@
-import { FilePlus, FolderPlus, FolderUp, History, Maximize2, Minimize2, Search, Share2, Trash2, Upload } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { FilePlus, FolderPlus, FolderUp, History, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen, Search, Share2, Trash2, Upload } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode, type CSSProperties } from 'react';
 import { AnlegenDialog } from './AnlegenDialog';
 import { Dateiansicht, OFFICE, type DateiansichtProps, type EditorSlot } from './Dateiansicht';
 import { FreigabeDialog } from './FreigabeDialog';
 import { gezogenePosten, ordnerPosten, type Hochladeposten } from './hochladen';
 import { Ordnerbaum, type OrdnerbaumProps } from './Ordnerbaum';
+import { LISTE_MAX, LISTE_MIN, useListenbreite } from './listenbreite';
 import { Papierkorbliste } from './Papierkorbliste';
 import { Rueckverweise } from './Rueckverweise';
 import { fuerQuelle, istQuellenScope, type Bereichsangabe, type VaultApi } from './transport';
@@ -51,6 +52,8 @@ export interface VaultBrowserProps {
     vollbild?: boolean;
     /** Die Großansicht wurde geöffnet oder geschlossen. */
     onVollbild?: (offen: boolean) => void;
+    /** Automatisch speichern beim Bearbeiten (0.7.4, Vorgabe aus) - siehe Dateiansicht. */
+    autoSpeichern?: DateiansichtProps['autoSpeichern'];
 }
 
 type Seitenleiste = 'ansicht' | 'versionen' | 'papierkorb';
@@ -75,6 +78,7 @@ export function VaultBrowser({
     rueckverweise = true,
     vollbild = true,
     onVollbild,
+    autoSpeichern,
 }: VaultBrowserProps) {
     // Externe Quelle (0.6.0): dieselben Bausteine, aber ueber `quelle/*`,
     // Baum ebenenweise, ohne Versionen, Papierkorb, Freigaben und Suche.
@@ -95,6 +99,7 @@ export function VaultBrowser({
     const hochladenOrdner = useRef('');
     const ordnerFeld = useRef<HTMLInputElement>(null);
     const [ziehen, setZiehen] = useState(false);
+    const liste = useListenbreite();
 
     const neuLaden = useCallback(() => setLadeschluessel((n) => n + 1), []);
     const frage = bestaetigen ?? ((f: string) => globalThis.confirm(f));
@@ -268,10 +273,35 @@ export function VaultBrowser({
     }, [baum, istDatei, pfad, onDateiGeoeffnet]);
 
     return (
-        <div className="flex h-full min-h-[60vh] flex-col gap-3 md:flex-row">
-            <aside className="flex w-full shrink-0 flex-col gap-2 md:w-72">
+        <div
+            className="flex h-full min-h-[60vh] flex-col gap-3 md:flex-row md:gap-0"
+            style={{ '--vault-liste-breite': `${liste.breite}px` } as CSSProperties}
+        >
+            {liste.eingeklappt && (
+                <div className="hidden shrink-0 md:mr-2 md:flex md:flex-col">
+                    <Button size="icon" variant="ghost" aria-label="Dateiliste aufklappen" title="Dateiliste aufklappen" onClick={() => liste.setEingeklappt(false)}>
+                        <PanelLeftOpen />
+                    </Button>
+                </div>
+            )}
+            <aside
+                className={cn('flex w-full shrink-0 flex-col gap-2 md:w-[var(--vault-liste-breite)]', liste.eingeklappt && 'md:hidden')}
+                data-dateiliste
+            >
                 <div className="flex items-center justify-between gap-2">
-                    <h2 className="truncate text-sm font-semibold">{bereich?.label ?? '…'}</h2>
+                    <div className="flex min-w-0 items-center gap-1">
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="hidden size-7 md:inline-flex"
+                            aria-label="Dateiliste einklappen"
+                            title="Dateiliste einklappen"
+                            onClick={() => liste.setEingeklappt(true)}
+                        >
+                            <PanelLeftClose />
+                        </Button>
+                        <h2 className="truncate text-sm font-semibold">{bereich?.label ?? '…'}</h2>
+                    </div>
                     {darfSchreiben && (
                         <div className="flex gap-1">
                             <Button size="icon" variant="ghost" aria-label="Neue Datei" title="Neue Datei" onClick={() => setDialog({ art: 'datei', ausgang: '' })}>
@@ -380,6 +410,39 @@ export function VaultBrowser({
                 )}
             </aside>
 
+            {!liste.eingeklappt && (
+                <div
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label="Breite der Dateiliste"
+                    aria-valuemin={LISTE_MIN}
+                    aria-valuemax={LISTE_MAX}
+                    aria-valuenow={liste.breite}
+                    tabIndex={0}
+                    className="group hidden w-3 shrink-0 cursor-col-resize items-stretch justify-center outline-none md:flex"
+                    onPointerDown={(e) => {
+                        const start = e.clientX;
+                        const breite = liste.breite;
+                        e.currentTarget.setPointerCapture?.(e.pointerId);
+                        const bewegen = (b: PointerEvent) => liste.setBreite(breite + b.clientX - start);
+                        const ende = () => {
+                            window.removeEventListener('pointermove', bewegen);
+                            window.removeEventListener('pointerup', ende);
+                        };
+                        window.addEventListener('pointermove', bewegen);
+                        window.addEventListener('pointerup', ende);
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                            e.preventDefault();
+                            liste.setBreite(liste.breite + (e.key === 'ArrowRight' ? 16 : -16));
+                        }
+                    }}
+                    onDoubleClick={() => liste.setBreite(288)}
+                >
+                    <span className="w-px bg-border transition-colors group-hover:bg-primary group-focus-visible:bg-primary" />
+                </div>
+            )}
             <section className="min-w-0 flex-1 rounded-md border">
                 {ansicht === 'papierkorb' ? (
                     <div className="grid gap-3 p-4">
@@ -456,6 +519,7 @@ export function VaultBrowser({
                                 renderEditor={renderEditor}
                                 renderAnsicht={renderAnsicht}
                                 onOeffnen={oeffnen}
+                                autoSpeichern={autoSpeichern}
                                 euroOffice={euroOffice}
                                 // Auch in Quellen (0.7.2): das Produkt entscheidet, was es dort zeigt (AI Brain: eigener Betrachter).
                                 renderPdf={renderPdf}

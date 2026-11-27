@@ -153,3 +153,35 @@ it('sagt im Bereichsreiter, ob eine Quelle erreichbar ist, und nur bei Quellen',
     $this->quelle->forceFill(['mount_path' => $this->nichtEingehaengt])->save();
     expect(collect(app(Navigation::class)->bereiche($this->editor))->keyBy('slug')['extern:grafik']['erreichbar'])->toBeFalse();
 });
+
+/*
+ * 0.6.5 (aibrain-e1, AI-Brain-Prod): Anmerkungen, Vorschaubilder und die
+ * EuroOffice-Konfiguration liefen bei Quellen mit 500 in die Ablage. Jetzt
+ * lesbare Antworten - ein 500 gibt es an keiner Stelle.
+ */
+it('antwortet bei Quellen auf Anmerkungen, Vorschau und Office ohne 500', function () {
+    file_put_contents($this->imSpeicher.'/buch.epub', 'epub');
+    file_put_contents($this->imSpeicher.'/plan.pdf', '%PDF-1.4');
+    file_put_contents($this->imSpeicher.'/brief.docx', 'docx');
+    config()->set('vault.eurooffice.enabled', true);
+    config()->set('vault.eurooffice.public_url', 'https://office.example');
+    config()->set('vault.eurooffice.jwt_secret', str_repeat('a', 64));
+
+    // PDF: dort lief der Pfad ueber die Ablage (gemessener 500); EPUB las schon vorher ohne Ablage.
+    $this->actingAs($this->editor)->getJson('/vault/api/anmerkungen?scope=extern:grafik&path=plan.pdf')
+        ->assertOk()->assertJsonPath('type', 'pdf')->assertJsonPath('annotations', []);
+    $this->actingAs($this->editor)->getJson('/vault/api/anmerkungen?scope=extern:grafik&path=buch.epub')
+        ->assertOk()->assertJsonPath('annotations', []);
+    $this->actingAs($this->editor)->postJson('/vault/api/anmerkungen?scope=extern:grafik', ['path' => 'buch.epub', 'quote' => 'x'])
+        ->assertForbidden();
+    $this->actingAs($this->editor)->patchJson('/vault/api/anmerkungen?scope=extern:grafik', ['path' => 'buch.epub', 'id' => 'a'])
+        ->assertForbidden();
+    $this->actingAs($this->editor)->deleteJson('/vault/api/anmerkungen?scope=extern:grafik', ['path' => 'buch.epub', 'id' => 'a'])
+        ->assertForbidden();
+    $this->actingAs($this->editor)->getJson('/vault/api/vorschau?scope=extern:grafik&path=fotos/2026/bild.jpg')
+        ->assertNotFound();
+    $this->actingAs($this->editor)->getJson('/vault/api/eurooffice/konfiguration?scope=extern:grafik&path=brief.docx')
+        ->assertStatus(422)->assertJsonPath('error', fn (string $text) => str_contains($text, 'herunterladen'));
+
+    expect(file_exists($this->imSpeicher.'/buch.epub'))->toBeTrue();
+});

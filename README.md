@@ -69,6 +69,11 @@ In jedem Produkt sieht die Vault-Leiste gleich aus, Vorbild ist AI Brain. Die Le
   - „Ordner hochladen“ gibt es oben und im ⋮ eines Ordners. Unterordner bleiben erhalten.
   - Hochgeladen wird nacheinander; der Server legt fehlende Ordner selbst an.
   - Ohne Schreibrecht gibt es weder Ablage noch Knopf.
+- **Quellen ohne 500** (0.6.5): Anmerkungen, Vorschaubilder und EuroOffice liefen bei Quellen in die Ablage.
+  - Die Anmerkungsliste ist bei Quellen leer, Anlegen, Ändern und Entfernen antworten mit 403.
+  - Vorschaubilder antworten mit 404.
+  - Die Editor-Konfiguration antwortet mit 422 und dem Hinweis, die Datei herunterzuladen.
+  - Office in Quellen folgt mit 0.7.x.
 - **Quellen** (0.6.4):
   - `Navigation::bereiche()` meldet bei Quellen `erreichbar`, also eingeschaltet und eingehängt. Bei einer nicht erreichbaren Quelle zeigt der `Bereichsreiter` ein Warndreieck und sagt es in der Beschreibungszeile.
   - Der Graph einer Quelle (`GET verweise?scope=extern:…`) antwortet mit 404 „Quellen haben keinen Graphen.“. Bisher kam ein Fehler 500 aus der Ablage.

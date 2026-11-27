@@ -14,6 +14,7 @@ use Peppermint\Vault\Http\Bereichswahl;
 use Peppermint\Vault\Vault;
 use Peppermint\Vault\Vorschaubilder;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -42,6 +43,13 @@ class AnmerkungenController extends Controller
         $pfad = (string) $request->validate(['path' => 'required|string'])['path'];
         $bereich = $this->wahl->aus($request);
 
+        // Quellen (fremder Speicher) haben keinen Ort fuer Anmerkungen - leere Liste statt 500
+        // aus der Ablage (0.6.5, aibrain-e1: gemessen an PDFs, deren Pfad ueber die Ablage
+        // aufgeloest wird). Vor art(), damit es nicht davon abhaengt, ob PyMuPDF da ist.
+        if ($bereich->istQuelle()) {
+            return response()->json(['type' => strtolower(pathinfo($pfad, PATHINFO_EXTENSION)), 'annotations' => []]);
+        }
+
         return response()->json(['type' => $this->art($pfad), 'annotations' => $this->lesen($bereich, $pfad)['annotations']]);
     }
 
@@ -59,6 +67,7 @@ class AnmerkungenController extends Controller
             'chapter' => 'nullable|string',
         ]);
         $bereich = $this->wahl->aus($request, schreiben: true);
+        $this->keineQuelle($bereich);
         $pfad = $d['path'];
         $autor = (string) ($request->user()->name ?? '');
         $farbe = $d['color'] ?? 'yellow';
@@ -92,6 +101,7 @@ class AnmerkungenController extends Controller
             'color' => 'nullable|in:'.self::FARBEN,
         ]);
         $bereich = $this->wahl->aus($request, schreiben: true);
+        $this->keineQuelle($bereich);
 
         if ($this->art($d['path']) === 'pdf') {
             if (! isset($d['page'], $d['index'])) {
@@ -115,6 +125,7 @@ class AnmerkungenController extends Controller
             'id' => 'nullable|string',
         ]);
         $bereich = $this->wahl->aus($request, schreiben: true);
+        $this->keineQuelle($bereich);
 
         if ($this->art($d['path']) === 'pdf') {
             if (! isset($d['page'], $d['index'])) {
@@ -133,6 +144,10 @@ class AnmerkungenController extends Controller
     {
         $pfad = (string) $request->validate(['path' => 'required|string'])['path'];
         $bereich = $this->wahl->aus($request);
+        // Quellen: keine Vorschaubilder (der Browser fragt sie dort nicht an) - 404 statt 500.
+        if ($bereich->istQuelle()) {
+            throw new NotFoundHttpException;
+        }
         $bild = $bilder->vorschau($bereich, $pfad, $vault->absolut($bereich, $pfad));
 
         if ($bild === null) {
@@ -144,6 +159,14 @@ class AnmerkungenController extends Controller
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, max-age=86400',
         ]);
+    }
+
+    /** Anmerkungen schreiben geht nur im Vault-Speicher; in Quellen 403 statt 500 (0.6.5). */
+    private function keineQuelle(Bereich $bereich): void
+    {
+        if ($bereich->istQuelle()) {
+            throw new AccessDeniedHttpException('Anmerkungen gibt es in Quellen nicht.');
+        }
     }
 
     private function antwort(Bereich $bereich, string $pfad): JsonResponse

@@ -73,6 +73,12 @@ class EuroOfficeController extends Controller
 
         $bereich = $wahl->aus($request);
 
+        // Quellen: Office kommt erst mit 0.7.x (Lesen/Schreiben ueber Quellen statt Ablage).
+        // Bis dahin eine lesbare Absage statt 500 aus der Ablage (0.6.5, aibrain-e1).
+        if ($bereich->istQuelle()) {
+            return response()->json(['error' => 'Office-Dateien in Quellen lassen sich noch nicht im Editor oeffnen - bitte herunterladen.'], 422);
+        }
+
         if (! is_file($this->ablage->aufloesen($bereich, $pfad))) {
             throw new NotFoundHttpException;
         }

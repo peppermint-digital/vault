@@ -61,6 +61,13 @@ export interface Verknuepfung {
     angeheftet: boolean;
 }
 
+/** Eine Datei, die auf die geoeffnete verweist (0.7.0). */
+export interface Rueckverweis {
+    id: string;
+    label: string;
+    path: string;
+}
+
 export interface Verweisgraph {
     nodes: { id: string; label: string; path: string; linkCount: number }[];
     edges: { source: string; target: string }[];

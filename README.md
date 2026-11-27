@@ -69,6 +69,15 @@ In jedem Produkt sieht die Vault-Leiste gleich aus, Vorbild ist AI Brain. Die Le
   - „Ordner hochladen“ gibt es oben und im ⋮ eines Ordners. Unterordner bleiben erhalten.
   - Hochgeladen wird nacheinander; der Server legt fehlende Ordner selbst an.
   - Ohne Schreibrecht gibt es weder Ablage noch Knopf.
+- **Rückverweise und Großansicht** (0.7.0, mit AI Brain abgestimmt):
+  - **„Verweise hierher“:** Unter einer Markdown-Datei steht, welche Dateien des Bereichs auf sie verweisen; ein Klick öffnet die Datei. Das gilt in jedem Bereich, in Quellen nie. Abschaltbar mit `rueckverweise={false}`.
+  - **Großansicht:**
+    - Der Knopf rechts in der Kopfzeile der Dateiansicht legt sie über alles (`fixed inset-0`). Esc oder der Knopf schließt sie.
+    - `renderDateiAktionen` wird dort mitgezeichnet; der Slot erfährt über `vollbild`, ob er in der Großansicht steht.
+    - `onVollbild(offen)` meldet Öffnen und Schließen.
+    - Das Auge im Baum („Bildschirmfüllend lesen“) öffnet die Datei direkt groß.
+    - Abschaltbar mit `vollbild={false}`.
+  - **Transport:** `api.rueckverweise(scope, path)`.
 - **Quellen ohne 500** (0.6.5): Anmerkungen, Vorschaubilder und EuroOffice liefen bei Quellen in die Ablage.
   - Die Anmerkungsliste ist bei Quellen leer, Anlegen, Ändern und Entfernen antworten mit 403.
   - Vorschaubilder antworten mit 404.

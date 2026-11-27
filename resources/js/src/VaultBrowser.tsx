@@ -1,4 +1,4 @@
-import { FilePlus, FolderPlus, FolderUp, History, Search, Share2, Trash2, Upload } from 'lucide-react';
+import { FilePlus, FolderPlus, FolderUp, History, Maximize2, Minimize2, Search, Share2, Trash2, Upload } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { AnlegenDialog } from './AnlegenDialog';
 import { Dateiansicht, type DateiansichtProps, type EditorSlot } from './Dateiansicht';
@@ -6,6 +6,7 @@ import { FreigabeDialog } from './FreigabeDialog';
 import { gezogenePosten, ordnerPosten, type Hochladeposten } from './hochladen';
 import { Ordnerbaum, type OrdnerbaumProps } from './Ordnerbaum';
 import { Papierkorbliste } from './Papierkorbliste';
+import { Rueckverweise } from './Rueckverweise';
 import { fuerQuelle, istQuellenScope, type Bereichsangabe, type VaultApi } from './transport';
 import type { Baumeintrag, Suchtreffer } from './typen';
 import { Button } from './ui/button';
@@ -39,11 +40,17 @@ export interface VaultBrowserProps {
     /** PDFs anmerken: PdfAnnotator aus `@peppermint-digital/vault/anmerken` einsetzen. */
     renderPdf?: DateiansichtProps['renderPdf'];
     /** Knoepfe des Produkts rechts in der Kopfzeile einer Datei (0.6.1), z. B. „Grossansicht". */
-    renderDateiAktionen?: (slot: { pfad: string; scope: string; darfSchreiben: boolean }) => ReactNode;
+    renderDateiAktionen?: (slot: { pfad: string; scope: string; darfSchreiben: boolean; vollbild: boolean }) => ReactNode;
     /** Eine Datei wurde geoeffnet — per Klick, Suche, Anlegen oder ueber `startPfad` (0.6.1). */
     onDateiGeoeffnet?: (pfad: string) => void;
     /** Etwas rechts an jedem Eintrag im Baum (0.6.1), z. B. Koepfe der Bearbeitenden. */
     renderBaumMarke?: OrdnerbaumProps['renderBaumMarke'];
+    /** „Verweise hierher" unter Markdown-Dateien (0.7.0). Vorgabe an; in Quellen nie. */
+    rueckverweise?: boolean;
+    /** Knopf „Großansicht": die Dateiansicht über alles legen, Esc schließt (0.7.0). Vorgabe an. */
+    vollbild?: boolean;
+    /** Die Großansicht wurde geöffnet oder geschlossen. */
+    onVollbild?: (offen: boolean) => void;
 }
 
 type Seitenleiste = 'ansicht' | 'versionen' | 'papierkorb';
@@ -65,6 +72,9 @@ export function VaultBrowser({
     renderDateiAktionen,
     onDateiGeoeffnet,
     renderBaumMarke,
+    rueckverweise = true,
+    vollbild = true,
+    onVollbild,
 }: VaultBrowserProps) {
     // Externe Quelle (0.6.0): dieselben Bausteine, aber ueber `quelle/*`,
     // Baum ebenenweise, ohne Versionen, Papierkorb, Freigaben und Suche.
@@ -227,6 +237,25 @@ export function VaultBrowser({
 
     const darfSchreiben = bereich?.darfSchreiben ?? false;
     const istDatei = pfad !== '' && !(baum && istOrdnerIn(baum, pfad));
+    // Grossansicht (0.7.0): Esc schliesst; ohne offene Datei gibt es keine.
+    const [gross, setGross] = useState(false);
+    const istGross = gross && istDatei && vollbild;
+    useEffect(() => {
+        if (!istGross) {
+            return;
+        }
+        const taste = (e: KeyboardEvent) => e.key === 'Escape' && setGross(false);
+        window.addEventListener('keydown', taste);
+        return () => window.removeEventListener('keydown', taste);
+    }, [istGross]);
+    const gemeldetGross = useRef(false);
+    useEffect(() => {
+        if (gemeldetGross.current !== istGross) {
+            gemeldetGross.current = istGross;
+            onVollbild?.(istGross);
+        }
+    }, [istGross, onVollbild]);
+
     /** Wohin Gezogenes faellt: in den offenen Ordner, bei offener Datei in deren Ordner. */
     const ablageOrdner = istDatei ? ordnerVon(pfad) : pfad;
 
@@ -330,6 +359,14 @@ export function VaultBrowser({
                             vorschauUrl={(p) => (!quelle && /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(p) ? api.vorschauUrl(scope, p) : null)}
                             onOrdnerOeffnen={quelle ? ebeneLaden : undefined}
                             renderBaumMarke={renderBaumMarke}
+                            onLesen={
+                                vollbild
+                                    ? (p) => {
+                                          oeffnen(p);
+                                          setGross(true);
+                                      }
+                                    : undefined
+                            }
                         />
                     )}
                 </div>
@@ -361,7 +398,13 @@ export function VaultBrowser({
                 ) : !istDatei ? (
                     <p className="p-6 text-sm text-muted-foreground">Links eine Datei wählen.</p>
                 ) : (
-                    <>
+                    <div
+                        className={istGross ? 'fixed inset-0 z-50 flex flex-col overflow-auto bg-background' : 'contents'}
+                        role={istGross ? 'dialog' : undefined}
+                        aria-modal={istGross ? true : undefined}
+                        aria-label={istGross ? `Großansicht: ${pfad}` : undefined}
+                        data-vollbild={istGross ? '' : undefined}
+                    >
                         <div className="flex gap-1 border-b px-2 py-1">
                             <Button size="sm" variant={ansicht === 'ansicht' ? 'secondary' : 'ghost'} onClick={() => setAnsicht('ansicht')}>
                                 Datei
@@ -376,7 +419,22 @@ export function VaultBrowser({
                                     <Share2 /> Freigeben
                                 </Button>
                             )}
-                            {renderDateiAktionen && <div className="ml-auto flex items-center gap-1">{renderDateiAktionen({ pfad, scope, darfSchreiben })}</div>}
+                            {(renderDateiAktionen || vollbild) && (
+                                <div className="ml-auto flex items-center gap-1">
+                                    {renderDateiAktionen?.({ pfad, scope, darfSchreiben, vollbild: istGross })}
+                                    {vollbild && (
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            aria-label={istGross ? 'Großansicht schließen' : 'Großansicht'}
+                                            title={istGross ? 'Großansicht schließen (Esc)' : 'Großansicht'}
+                                            onClick={() => setGross(!istGross)}
+                                        >
+                                            {istGross ? <Minimize2 /> : <Maximize2 />}
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
                         </div>
                         {ansicht === 'versionen' ? (
                             <div className="p-4">
@@ -396,8 +454,11 @@ export function VaultBrowser({
                                 epubLesefassungVorhanden={(p) => baum !== null && istDateiIn(baum, p)}
                             />
                         )}
+                        {ansicht === 'ansicht' && rueckverweise && !quelle && /\.md$/i.test(pfad) && (
+                            <Rueckverweise key={`${scope}:${pfad}:${ladeschluessel}`} api={api} scope={scope} pfad={pfad} onOeffnen={oeffnen} />
+                        )}
                         <FreigabeDialog api={api} scope={scope} pfad={pfad} offen={freigabeOffen} onSchliessen={() => setFreigabeOffen(false)} />
-                    </>
+                    </div>
                 )}
             </section>
 

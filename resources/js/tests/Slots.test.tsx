@@ -59,7 +59,9 @@ describe('Slots', () => {
     it('zeigt ohne Slots nichts Zusaetzliches', async () => {
         const s = server();
         const api = vaultApi({ basisUrl: '/vault/api', csrfToken: 't', fetch: s.holen });
-        const { container, unmount } = render(<VaultBrowser api={api} scope="private" startPfad="n.md" />);
+        // Seit 0.7.0 sind Grossansicht und Rueckverweise Vorgaben (an); hier geht es nur darum,
+        // dass leere SLOTS nichts zeichnen - deshalb beide ausgeschaltet.
+        const { container, unmount } = render(<VaultBrowser api={api} scope="private" startPfad="n.md" vollbild={false} rueckverweise={false} />);
         await warten();
         await warten();
 

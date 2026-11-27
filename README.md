@@ -69,6 +69,18 @@ In jedem Produkt sieht die Vault-Leiste gleich aus, Vorbild ist AI Brain. Die Le
   - „Ordner hochladen“ gibt es oben und im ⋮ eines Ordners. Unterordner bleiben erhalten.
   - Hochgeladen wird nacheinander; der Server legt fehlende Ordner selbst an.
   - Ohne Schreibrecht gibt es weder Ablage noch Knopf.
+- **Office in Quellen und CSRF-Rückfall** (0.7.1):
+  - **EuroOffice in Quellen:**
+    - Vorhandene Office-Dateien öffnen im Editor.
+    - Gelesen und gespeichert wird über `Quellen`, also direkt im fremden Speicher, ohne Versionen.
+    - Bearbeiten nur mit Schreibrecht, sonst Ansicht.
+    - Bricht die Quelle während der Sitzung weg, lehnt der Rückweg ab. Die Datei bleibt beim alten Stand, und es wird nie woanders hingeschrieben.
+    - Über der Datei steht ein Hinweis darauf.
+    - Neue Office-Dateien legt der Anlegen-Dialog in Quellen nicht an.
+  - **CSRF:**
+    - `csrfToken` ist optional.
+    - Das Paket schickt zusätzlich `X-XSRF-TOKEN` aus dem Cookie `XSRF-TOKEN` mit (Laravel-Standard), `X-CSRF-TOKEN` nur noch mit Wert.
+    - Ein Produkt ohne `csrf`-Meta-Tag schreibt damit trotzdem.
 - **Rückverweise und Großansicht** (0.7.0, mit AI Brain abgestimmt):
   - **„Verweise hierher“:** Unter einer Markdown-Datei steht, welche Dateien des Bereichs auf sie verweisen; ein Klick öffnet die Datei. Das gilt in jedem Bereich, in Quellen nie. Abschaltbar mit `rueckverweise={false}`.
   - **Großansicht:**

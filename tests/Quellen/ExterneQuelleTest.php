@@ -11,13 +11,16 @@
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Peppermint\Vault\Ablage;
 use Peppermint\Vault\Bereich;
 use Peppermint\Vault\Contracts\Vaultrechte;
+use Peppermint\Vault\EuroOffice\Client;
 use Peppermint\Vault\Models\VaultSource;
 use Peppermint\Vault\Models\VaultVersion;
 use Peppermint\Vault\Navigation;
 use Peppermint\Vault\Quellen\Quellen;
+use Peppermint\Vault\Vault;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 beforeEach(function () {
@@ -180,8 +183,88 @@ it('antwortet bei Quellen auf Anmerkungen, Vorschau und Office ohne 500', functi
         ->assertForbidden();
     $this->actingAs($this->editor)->getJson('/vault/api/vorschau?scope=extern:grafik&path=fotos/2026/bild.jpg')
         ->assertNotFound();
+    // Seit 0.7.1 geht Office in Quellen (Tests unten) - hier nur: kein 500.
     $this->actingAs($this->editor)->getJson('/vault/api/eurooffice/konfiguration?scope=extern:grafik&path=brief.docx')
-        ->assertStatus(422)->assertJsonPath('error', fn (string $text) => str_contains($text, 'herunterladen'));
+        ->assertOk();
 
     expect(file_exists($this->imSpeicher.'/buch.epub'))->toBeTrue();
+});
+
+/*
+ * 0.7.1 (Keeper-FREI, mit aibrain-e1 abgestimmt): EuroOffice in Quellen.
+ * Lesen und Schreiben ueber Quellen statt Ablage, ohne Versionen; edit nur mit
+ * Schreibrecht; bricht die Quelle weg, lehnt der Rueckweg ab und schreibt NIE
+ * woanders hin (AI Brain #1625).
+ */
+function officeInQuellen(): Client
+{
+    config()->set('vault.eurooffice', [
+        'enabled' => true,
+        'public_url' => 'https://manager.example.test/eurooffice',
+        'internal_url' => 'http://127.0.0.1:8099',
+        'jwt_secret' => str_repeat('s', 40),
+        'jwt_header' => 'Authorization',
+        'callback_base_url' => 'https://manager.example.test',
+        'timeout_seconds' => 5,
+        'praefix' => 'vault/eurooffice',
+    ]);
+
+    return app(Client::class);
+}
+
+function rueckwegNutzlast(Client $client): array
+{
+    $rumpf = ['status' => 2, 'url' => 'https://manager.example.test/eurooffice/cache/files/abc/output.docx', 'users' => ['editor']];
+    $rumpf['token'] = $client->sign($rumpf);
+
+    return $rumpf;
+}
+
+it('oeffnet Office in einer Quelle zum Bearbeiten nur mit Schreibrecht', function () {
+    officeInQuellen();
+    file_put_contents($this->imSpeicher.'/brief.docx', 'alt');
+    $adresse = '/vault/api/eurooffice/konfiguration?scope=extern:grafik&path=brief.docx';
+
+    $this->actingAs($this->editor)->getJson($adresse)->assertOk()
+        ->assertJsonPath('config.editorConfig.mode', 'edit')
+        ->assertJsonPath('config.editorConfig.callbackUrl', fn ($url) => is_string($url) && str_contains($url, '/rueckweg/'));
+    $this->actingAs($this->leser)->getJson($adresse)->assertOk()
+        ->assertJsonPath('config.editorConfig.mode', 'view')
+        ->assertJsonMissingPath('config.editorConfig.callbackUrl');
+});
+
+it('liefert dem Document Server die Datei aus der Quelle', function () {
+    $client = officeInQuellen();
+    file_put_contents($this->imSpeicher.'/brief.docx', 'INHALT-AUS-DER-QUELLE');
+    $token = $client->issueDocumentToken('source:grafik', 'brief.docx', 10);
+
+    expect($this->get("/vault/eurooffice/datei/{$token}")->assertOk()->streamedContent())->toBe('INHALT-AUS-DER-QUELLE');
+});
+
+it('speichert ueber den Rueckweg in die Quelle, ohne Version', function () {
+    $client = officeInQuellen();
+    Http::fake(['*' => Http::response('NEU', 200)]);
+    file_put_contents($this->imSpeicher.'/brief.docx', 'alt');
+    $ziel = $client->sign(['scope' => 'source:grafik', 'path' => 'brief.docx', 'user' => (string) $this->editor->id, 'iat' => time(), 'exp' => time() + 600]);
+
+    $this->postJson("/vault/eurooffice/rueckweg/{$ziel}", rueckwegNutzlast($client))->assertJson(['error' => 0]);
+
+    expect(file_get_contents($this->imSpeicher.'/brief.docx'))->toBe('NEU')
+        ->and(VaultVersion::query()->count())->toBe(0);
+});
+
+it('lehnt den Rueckweg ab, wenn die Quelle waehrend der Sitzung wegbricht, und schreibt nirgendwo anders hin', function () {
+    $client = officeInQuellen();
+    Http::fake(['*' => Http::response('NEU', 200)]);
+    file_put_contents($this->imSpeicher.'/brief.docx', 'alt');
+    $ziel = $client->sign(['scope' => 'source:grafik', 'path' => 'brief.docx', 'user' => (string) $this->editor->id, 'iat' => time(), 'exp' => time() + 600]);
+
+    $this->quelle->forceFill(['mount_path' => $this->nichtEingehaengt])->save();
+
+    $this->postJson("/vault/eurooffice/rueckweg/{$ziel}", rueckwegNutzlast($client))->assertJson(['error' => 1]);
+
+    expect(file_get_contents($this->imSpeicher.'/brief.docx'))->toBe('alt')
+        ->and(File::files($this->nichtEingehaengt))->toBe([])
+        ->and(VaultVersion::query()->count())->toBe(0)
+        ->and(app(Vault::class)->existiert(Bereich::person($this->editor->id), 'brief.docx'))->toBeFalse();
 });

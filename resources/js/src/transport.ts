@@ -9,13 +9,17 @@
  * darf nie wie ein gelungenes aussehen. Der Konflikt (409) hat einen eigenen
  * Typ, weil er kein Fehler ist, sondern eine Frage an die Person.
  */
+import { csrfKoepfe, type CsrfQuelle } from './csrf';
 import type { Baumeintrag, Rueckverweis, Suchtreffer, Verweisgraph } from './typen';
 
 export interface VaultApiOptionen {
     /** z.B. `/vault/api` — ohne Schraegstrich am Ende. */
     basisUrl: string;
-    /** Den CSRF-Token dort lesen, wo das Produkt ihn haelt. */
-    csrfToken: string | (() => string);
+    /**
+     * Den CSRF-Token dort lesen, wo das Produkt ihn haelt (Meta-Tag). Optional seit 0.7.1:
+     * ohne Wert geht `X-XSRF-TOKEN` aus dem Cookie mit (Laravel-Standard), siehe csrf.ts.
+     */
+    csrfToken?: CsrfQuelle;
     /** Fuer Tests und Produkte mit eigenem Client. */
     fetch?: typeof globalThis.fetch;
 }
@@ -95,7 +99,6 @@ type Abfrage = Record<string, string | number | undefined>;
 export function vaultApi(optionen: VaultApiOptionen) {
     const basis = optionen.basisUrl.replace(/\/+$/, '');
     const holen = optionen.fetch ?? ((...args: Parameters<typeof fetch>) => globalThis.fetch(...args));
-    const token = () => (typeof optionen.csrfToken === 'function' ? optionen.csrfToken() : optionen.csrfToken);
 
     function adresse(pfad: string, abfrage: Abfrage = {}): string {
         const teile = Object.entries(abfrage)
@@ -109,7 +112,7 @@ export function vaultApi(optionen: VaultApiOptionen) {
         const kopf: Record<string, string> = {
             Accept: 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': token(),
+            ...csrfKoepfe(optionen.csrfToken),
         };
         let body: BodyInit | undefined;
 

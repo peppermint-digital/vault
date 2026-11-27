@@ -1,7 +1,7 @@
 import { FilePlus, FolderPlus, FolderUp, History, Maximize2, Minimize2, Search, Share2, Trash2, Upload } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { AnlegenDialog } from './AnlegenDialog';
-import { Dateiansicht, type DateiansichtProps, type EditorSlot } from './Dateiansicht';
+import { Dateiansicht, OFFICE, type DateiansichtProps, type EditorSlot } from './Dateiansicht';
 import { FreigabeDialog } from './FreigabeDialog';
 import { gezogenePosten, ordnerPosten, type Hochladeposten } from './hochladen';
 import { Ordnerbaum, type OrdnerbaumProps } from './Ordnerbaum';
@@ -436,6 +436,12 @@ export function VaultBrowser({
                                 </div>
                             )}
                         </div>
+                        {quelle && euroOffice && darfSchreiben && ansicht === 'ansicht' && OFFICE.test(pfad) && (
+                            <p role="note" className="border-b bg-muted/50 px-4 py-2 text-sm text-muted-foreground" data-quellen-hinweis>
+                                Diese Datei liegt in einer Quelle: Änderungen gehen direkt dorthin, ohne Versionen. Ist die Quelle beim Speichern nicht
+                                erreichbar, wird deine Änderung <strong>nicht</strong> gespeichert.
+                            </p>
+                        )}
                         {ansicht === 'versionen' ? (
                             <div className="p-4">
                                 <Versionsliste api={api} scope={scope} pfad={pfad} darfWiederherstellen={darfSchreiben} onWiederhergestellt={() => setAnsicht('ansicht')} />
@@ -449,7 +455,7 @@ export function VaultBrowser({
                                 darfSchreiben={darfSchreiben}
                                 renderEditor={renderEditor}
                                 renderAnsicht={renderAnsicht}
-                                euroOffice={euroOffice && !quelle}
+                                euroOffice={euroOffice}
                                 renderPdf={quelle ? undefined : renderPdf}
                                 epubLesefassungVorhanden={(p) => baum !== null && istDateiIn(baum, p)}
                             />
@@ -468,7 +474,8 @@ export function VaultBrowser({
                 ausgang={dialog?.ausgang ?? ''}
                 onSchliessen={() => setDialog(null)}
                 onBestaetigen={dialogBestaetigt}
-                formate={euroOffice ? ['md', 'docx', 'xlsx', 'pptx'] : ['md']}
+                // Leere Office-Vorlagen nur im Vault-Speicher; in Quellen nur vorhandene Dateien oeffnen (0.7.1).
+                formate={euroOffice && !quelle ? ['md', 'docx', 'xlsx', 'pptx'] : ['md']}
                 vorhanden={namenIn(baum, dialog === null ? '' : dialog.art === 'umbenennen' ? ordnerVon(dialog.ausgang) : dialog.ausgang)}
                 bereichName={bereich?.label}
             />

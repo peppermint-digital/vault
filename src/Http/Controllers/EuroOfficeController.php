@@ -14,6 +14,7 @@ use Peppermint\Vault\EuroOffice\Client;
 use Peppermint\Vault\EuroOffice\Dateiart;
 use Peppermint\Vault\EuroOffice\Konfiguration;
 use Peppermint\Vault\Http\Bereichswahl;
+use Peppermint\Vault\Quellen\Quellen;
 use Peppermint\Vault\Vault;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -73,17 +74,14 @@ class EuroOfficeController extends Controller
 
         $bereich = $wahl->aus($request);
 
-        // Quellen: Office kommt erst mit 0.7.x (Lesen/Schreiben ueber Quellen statt Ablage).
-        // Bis dahin eine lesbare Absage statt 500 aus der Ablage (0.6.5, aibrain-e1).
-        if ($bereich->istQuelle()) {
-            return response()->json(['error' => 'Office-Dateien in Quellen lassen sich noch nicht im Editor oeffnen - bitte herunterladen.'], 422);
-        }
+        // Quellen (0.7.1): Pfad ueber Quellen statt Ablage; nicht eingehaengt -> 403 mit Grund.
+        $absolut = $this->absolutFuer($bereich, $pfad);
 
-        if (! is_file($this->ablage->aufloesen($bereich, $pfad))) {
+        if (! is_file($absolut)) {
             throw new NotFoundHttpException;
         }
 
-        return response()->json($bauer->bauen($bereich, $pfad, $request->user(), $rechte->darfSchreiben($request->user(), $bereich)));
+        return response()->json($bauer->bauen($bereich, $pfad, $request->user(), $rechte->darfSchreiben($request->user(), $bereich), $absolut));
     }
 
     public function datei(string $token): BinaryFileResponse
@@ -93,7 +91,7 @@ class EuroOfficeController extends Controller
         }
 
         $ziel = $this->client->readDocumentToken($token) ?? throw new AccessDeniedHttpException('Ungueltiges Token.');
-        $absolut = $this->ablage->aufloesen(Bereich::aus($ziel['scope']), $ziel['path']);
+        $absolut = $this->absolutFuer(Bereich::aus($ziel['scope']), $ziel['path']);
 
         if (! is_file($absolut)) {
             throw new NotFoundHttpException;
@@ -180,7 +178,15 @@ class EuroOfficeController extends Controller
             }
 
             file_put_contents($temp, $antwort->body());
-            $vault->binaerSchreiben(Bereich::aus($ziel['scope']), $ziel['path'], $temp, $this->autor($request));
+            $bereich = Bereich::aus($ziel['scope']);
+            if ($bereich->istQuelle()) {
+                // Fremder Speicher: direkt dorthin, ohne Versionen. Ist die Quelle weg, wirft
+                // Quellen::absolut (403) -> abgelehnt; NIE Ausweichen in den Vault-Speicher
+                // (AI Brain #1625).
+                app(Quellen::class)->binaerSchreiben($bereich, $ziel['path'], $temp);
+            } else {
+                $vault->binaerSchreiben($bereich, $ziel['path'], $temp, $this->autor($request));
+            }
 
             return $this->ok();
         } catch (\Throwable $e) {
@@ -190,6 +196,12 @@ class EuroOfficeController extends Controller
         } finally {
             @unlink($temp);
         }
+    }
+
+    /** Wo die Datei liegt: Quellen ueber Quellen::absolut (prueft Einhaengung), sonst die Ablage. */
+    private function absolutFuer(Bereich $bereich, string $pfad): string
+    {
+        return $bereich->istQuelle() ? app(Quellen::class)->absolut($bereich, $pfad) : $this->ablage->aufloesen($bereich, $pfad);
     }
 
     /** @param  array{scope: string, path: string}  $ziel */

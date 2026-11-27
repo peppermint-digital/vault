@@ -25,10 +25,11 @@ class Konfiguration
     ) {}
 
     /** @return array{apiJsUrl: string, config: array<string, mixed>} */
-    public function bauen(Bereich $bereich, string $pfad, Authenticatable $user, bool $darfBearbeiten): array
+    public function bauen(Bereich $bereich, string $pfad, Authenticatable $user, bool $darfBearbeiten, ?string $absolut = null): array
     {
         $endung = strtolower(pathinfo($pfad, PATHINFO_EXTENSION));
-        $absolut = $this->ablage->aufloesen($bereich, $pfad);
+        // Quellen reichen ihren Pfad herein (0.7.1) - sie laufen nicht ueber die Ablage.
+        $absolut ??= $this->ablage->aufloesen($bereich, $pfad);
 
         $konfiguration = [
             'documentType' => Dateiart::DOKUMENTTYPEN[$endung],

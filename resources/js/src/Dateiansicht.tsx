@@ -46,7 +46,7 @@ export interface DateiansichtProps {
 
 const TEXT = /\.(md|markdown|txt|html?|json|csv|excalidraw)$/i;
 const BILD = /\.(png|jpe?g|gif|webp|svg)$/i;
-const OFFICE = /\.(docx?|xlsx?|pptx?|odt|ods|odp|rtf)$/i;
+export const OFFICE = /\.(docx?|xlsx?|pptx?|odt|ods|odp|rtf)$/i;
 
 type Zustand =
     | { art: 'laedt' }

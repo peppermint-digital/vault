@@ -1,3 +1,4 @@
+import { csrfKoepfe, type CsrfQuelle } from './csrf';
 import { Lock } from 'lucide-react';
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Button } from './ui/button';
@@ -18,7 +19,8 @@ export interface GeteilteAnsichtProps {
     token: string;
     /** Die oeffentliche Schiene, Vorgabe `/vault/geteilt`. */
     basisUrl?: string;
-    csrfToken: string | (() => string);
+    /** Optional seit 0.7.1 - ohne Wert geht X-XSRF-TOKEN aus dem Cookie mit (csrf.ts). */
+    csrfToken?: CsrfQuelle;
     renderMarkdown?: (inhalt: string) => ReactNode;
     fetch?: typeof globalThis.fetch;
 }
@@ -75,7 +77,7 @@ export function GeteilteAnsicht({ token, basisUrl = '/vault/geteilt', csrfToken,
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': typeof csrfToken === 'function' ? csrfToken() : csrfToken,
+                ...csrfKoepfe(csrfToken),
             },
             body: JSON.stringify({ password: passwort }),
         }).catch(() => null);

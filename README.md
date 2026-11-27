@@ -69,6 +69,15 @@ In jedem Produkt sieht die Vault-Leiste gleich aus, Vorbild ist AI Brain. Die Le
   - „Ordner hochladen“ gibt es oben und im ⋮ eines Ordners. Unterordner bleiben erhalten.
   - Hochgeladen wird nacheinander; der Server legt fehlende Ordner selbst an.
   - Ohne Schreibrecht gibt es weder Ablage noch Knopf.
+- **Ansichts-Slot mit Navigation und Speichern** (0.7.3, aibrain-e1):
+  - `renderAnsicht` bekommt zusätzlich `scope`, `oeffnen(pfad)` und `speichern(inhalt)`, rein additiv.
+  - `oeffnen` öffnet eine Datei wie ein Klick im Baum, etwa für Wikilinks.
+  - `speichern` nimmt denselben Weg wie der Editor:
+    - Basis ist die geladene Version.
+    - Danach zeigt die Ansicht den neuen Inhalt.
+    - Bei einem Konflikt erscheint der Konfliktkasten, der eigene Stand wird zum Entwurf, und das Promise lehnt ab.
+    - Ohne Schreibrecht ist `speichern` `undefined`.
+  - Typ: `AnsichtSlot`.
 - **Fehlerbehebung** (0.7.2):
   - Dateiansicht und „Verweise hierher“ hatten seit 0.7.0 denselben React-`key`. Bei jedem Dateiwechsel blieb eine alte Ansicht stehen; die Ansichten stapelten sich untereinander. Jetzt hat jede ihren eigenen Schlüssel.
   - `renderPdf` wird auch in Quellen durchgereicht, das Produkt entscheidet, was es dort zeigt.

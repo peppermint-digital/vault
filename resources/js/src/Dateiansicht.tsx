@@ -25,14 +25,33 @@ export interface EditorSlot {
     darfSchreiben: boolean;
 }
 
+/**
+ * Was die Ansicht des Produkts bekommt (`renderAnsicht`). Seit 0.7.3 (aibrain-e1,
+ * Keeper A60) zusaetzlich `scope`, `oeffnen` und `speichern`, rein additiv:
+ * - `oeffnen(pfad)` oeffnet eine Datei im Browser wie ein Klick im Baum (Wikilinks).
+ * - `speichern(inhalt)` speichert ueber denselben Weg wie der Editor: mit der
+ *   geladenen Version als Basis; bei 409 erscheint der Konfliktkasten (der Inhalt
+ *   wird zum Entwurf) und das Promise lehnt ab. Ohne Schreibrecht `undefined`.
+ */
+export interface AnsichtSlot {
+    pfad: string;
+    inhalt: string;
+    rohUrl: string;
+    scope: string;
+    oeffnen: (pfad: string) => void;
+    speichern?: (inhalt: string) => Promise<void>;
+}
+
 export interface DateiansichtProps {
     api: VaultApi;
     scope: string;
     pfad: string;
     darfSchreiben: boolean;
     renderEditor?: (slot: EditorSlot) => ReactNode;
-    renderAnsicht?: (slot: { pfad: string; inhalt: string; rohUrl: string }) => ReactNode;
+    renderAnsicht?: (slot: AnsichtSlot) => ReactNode;
     onGespeichert?: (pfad: string) => void;
+    /** Eine andere Datei oeffnen (0.7.3) - der VaultBrowser reicht sein `oeffnen` herein. */
+    onOeffnen?: (pfad: string) => void;
     /** Office-Dateien im EuroOffice-Editor oeffnen (Server muss eingerichtet sein). */
     euroOffice?: boolean;
     /**
@@ -53,7 +72,19 @@ type Zustand =
     | { art: 'fehler'; text: string }
     | { art: 'da'; inhalt: string; version: string };
 
-export function Dateiansicht({ api, scope, pfad, darfSchreiben, renderEditor, renderAnsicht, onGespeichert, euroOffice = false, renderPdf, epubLesefassungVorhanden }: DateiansichtProps) {
+export function Dateiansicht({
+    api,
+    scope,
+    pfad,
+    darfSchreiben,
+    renderEditor,
+    renderAnsicht,
+    onGespeichert,
+    onOeffnen,
+    euroOffice = false,
+    renderPdf,
+    epubLesefassungVorhanden,
+}: DateiansichtProps) {
     const istText = TEXT.test(pfad);
     const [zustand, setZustand] = useState<Zustand>({ art: 'laedt' });
     const [entwurf, setEntwurf] = useState<string | null>(null);
@@ -84,27 +115,52 @@ export function Dateiansicht({ api, scope, pfad, darfSchreiben, renderEditor, re
     const rohUrl = api.rohUrl(scope, pfad);
     const name = pfad.split('/').pop() ?? pfad;
 
-    async function speichern(erzwingen = false) {
-        if (entwurf === null || zustand.art !== 'da') {
-            return;
+    /**
+     * Der eine Speicherweg - fuer den Editor (Entwurf) und seit 0.7.3 fuer die Ansicht
+     * des Produkts (z.B. ein angehaktes Kontrollkaestchen). Liefert, ob gespeichert wurde.
+     */
+    async function speichernInhalt(inhalt: string, erzwingen: boolean): Promise<'ok' | 'konflikt' | 'fehler'> {
+        if (zustand.art !== 'da') {
+            return 'fehler';
         }
         setSpeichert(true);
         setMeldung(null);
         try {
-            const d = await api.speichern(scope, pfad, entwurf, zustand.version, erzwingen);
-            setZustand({ art: 'da', inhalt: entwurf, version: d.version });
+            const d = await api.speichern(scope, pfad, inhalt, zustand.version, erzwingen);
+            setZustand({ art: 'da', inhalt, version: d.version });
             setEntwurf(null);
             setKonflikt(null);
             setMeldung('Gespeichert.');
             onGespeichert?.(pfad);
+            return 'ok';
         } catch (e) {
             if (e instanceof VaultKonflikt) {
+                // Der eigene Stand wird zum Entwurf, damit beide Knoepfe im Kasten wirken.
+                setEntwurf(inhalt);
                 setKonflikt(e);
-            } else {
-                setMeldung((e as Error).message);
+                return 'konflikt';
             }
+            setMeldung((e as Error).message);
+            return 'fehler';
         } finally {
             setSpeichert(false);
+        }
+    }
+
+    async function speichern(erzwingen = false) {
+        if (entwurf === null) {
+            return;
+        }
+        await speichernInhalt(entwurf, erzwingen);
+    }
+
+    async function ansichtSpeichern(inhalt: string): Promise<void> {
+        const ergebnis = await speichernInhalt(inhalt, false);
+        if (ergebnis === 'konflikt') {
+            throw new Error('Jemand hat diese Datei geändert - bitte im Hinweis entscheiden.');
+        }
+        if (ergebnis === 'fehler') {
+            throw new Error('Speichern fehlgeschlagen.');
         }
     }
 
@@ -205,7 +261,14 @@ export function Dateiansicht({ api, scope, pfad, darfSchreiben, renderEditor, re
                     />
                 )
             ) : renderAnsicht ? (
-                renderAnsicht({ pfad, inhalt: zustand.inhalt, rohUrl })
+                renderAnsicht({
+                    pfad,
+                    inhalt: zustand.inhalt,
+                    rohUrl,
+                    scope,
+                    oeffnen: (ziel) => onOeffnen?.(ziel),
+                    speichern: darfSchreiben ? ansichtSpeichern : undefined,
+                })
             ) : (
                 <pre className="overflow-auto rounded-md border bg-muted/30 p-3 text-sm whitespace-pre-wrap">{zustand.inhalt}</pre>
             )}

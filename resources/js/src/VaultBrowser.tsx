@@ -32,7 +32,7 @@ export interface VaultBrowserProps {
     /** Wenn das Produkt die Adresszeile mitfuehren will. */
     onPfadGewechselt?: (pfad: string) => void;
     renderEditor?: (slot: EditorSlot) => ReactNode;
-    renderAnsicht?: (slot: { pfad: string; inhalt: string; rohUrl: string }) => ReactNode;
+    renderAnsicht?: DateiansichtProps['renderAnsicht'];
     /** Vorgabe: window.confirm. */
     bestaetigen?: (frage: string) => boolean;
     /** Office-Dateien im EuroOffice-Editor oeffnen. */
@@ -455,6 +455,7 @@ export function VaultBrowser({
                                 darfSchreiben={darfSchreiben}
                                 renderEditor={renderEditor}
                                 renderAnsicht={renderAnsicht}
+                                onOeffnen={oeffnen}
                                 euroOffice={euroOffice}
                                 // Auch in Quellen (0.7.2): das Produkt entscheidet, was es dort zeigt (AI Brain: eigener Betrachter).
                                 renderPdf={renderPdf}

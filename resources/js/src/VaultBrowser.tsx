@@ -456,12 +456,15 @@ export function VaultBrowser({
                                 renderEditor={renderEditor}
                                 renderAnsicht={renderAnsicht}
                                 euroOffice={euroOffice}
-                                renderPdf={quelle ? undefined : renderPdf}
+                                // Auch in Quellen (0.7.2): das Produkt entscheidet, was es dort zeigt (AI Brain: eigener Betrachter).
+                                renderPdf={renderPdf}
                                 epubLesefassungVorhanden={(p) => baum !== null && istDateiIn(baum, p)}
                             />
                         )}
                         {ansicht === 'ansicht' && rueckverweise && !quelle && /\.md$/i.test(pfad) && (
-                            <Rueckverweise key={`${scope}:${pfad}:${ladeschluessel}`} api={api} scope={scope} pfad={pfad} onOeffnen={oeffnen} />
+                            // Eigener key (0.7.2): derselbe wie bei der Dateiansicht nebenan liess React alte
+                            // Ansichten stehen - nach jedem Dateiwechsel eine mehr (aibrain-e1, live seit 0.7.0).
+                            <Rueckverweise key={`rv:${scope}:${pfad}:${ladeschluessel}`} api={api} scope={scope} pfad={pfad} onOeffnen={oeffnen} />
                         )}
                         <FreigabeDialog api={api} scope={scope} pfad={pfad} offen={freigabeOffen} onSchliessen={() => setFreigabeOffen(false)} />
                     </div>

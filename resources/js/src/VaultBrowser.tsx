@@ -54,6 +54,11 @@ export interface VaultBrowserProps {
     onVollbild?: (offen: boolean) => void;
     /** Automatisch speichern beim Bearbeiten (0.7.4, Vorgabe aus) - siehe Dateiansicht. */
     autoSpeichern?: DateiansichtProps['autoSpeichern'];
+    /**
+     * localStorage-Schluessel, unter dem die Listenbreite als Zahl steht (0.7.5).
+     * AI Brain: 'ai-brain-vault-sidebar-w', damit die alte Breite bleibt. Ohne: eigener Schluessel.
+     */
+    baumBreiteSchluessel?: string;
 }
 
 type Seitenleiste = 'ansicht' | 'versionen' | 'papierkorb';
@@ -79,6 +84,7 @@ export function VaultBrowser({
     vollbild = true,
     onVollbild,
     autoSpeichern,
+    baumBreiteSchluessel,
 }: VaultBrowserProps) {
     // Externe Quelle (0.6.0): dieselben Bausteine, aber ueber `quelle/*`,
     // Baum ebenenweise, ohne Versionen, Papierkorb, Freigaben und Suche.
@@ -99,7 +105,11 @@ export function VaultBrowser({
     const hochladenOrdner = useRef('');
     const ordnerFeld = useRef<HTMLInputElement>(null);
     const [ziehen, setZiehen] = useState(false);
-    const liste = useListenbreite();
+    const liste = useListenbreite(baumBreiteSchluessel);
+    // Handy (0.7.5, Keeper: fuer alle Produkte, wie bisher in AI Brain): Ist eine Datei offen,
+    // steht die Liste eingeklappt darueber; nach der Wahl einer Datei klappt sie wieder zu.
+    // Nicht gemerkt. Auf breiten Bildschirmen ohne Wirkung (nur max-md-Klassen).
+    const [handyListe, setHandyListe] = useState(startPfad === '');
 
     const neuLaden = useCallback(() => setLadeschluessel((n) => n + 1), []);
     const frage = bestaetigen ?? ((f: string) => globalThis.confirm(f));
@@ -146,8 +156,12 @@ export function VaultBrowser({
             setPfad(neuerPfad);
             setAnsicht('ansicht');
             onPfadGewechselt?.(neuerPfad);
+            // Handy: nach der Wahl einer DATEI die Liste zuklappen, damit sie nicht ueber dem Text steht.
+            if (neuerPfad !== '' && !(baum && istOrdnerIn(baum, neuerPfad))) {
+                setHandyListe(false);
+            }
         },
-        [onPfadGewechselt],
+        [onPfadGewechselt, baum],
     );
 
     const ebeneLaden = useCallback(
@@ -264,6 +278,13 @@ export function VaultBrowser({
     /** Wohin Gezogenes faellt: in den offenen Ordner, bei offener Datei in deren Ordner. */
     const ablageOrdner = istDatei ? ordnerVon(pfad) : pfad;
 
+    // Handy: Ist keine Datei offen (z.B. startPfad ist ein Ordner), braucht es die Liste.
+    useEffect(() => {
+        if (baum !== null && !istDatei) {
+            setHandyListe(true);
+        }
+    }, [baum, istDatei]);
+
     const gemeldet = useRef('');
     useEffect(() => {
         if (baum !== null && istDatei && gemeldet.current !== pfad) {
@@ -277,6 +298,11 @@ export function VaultBrowser({
             className="flex h-full min-h-[60vh] flex-col gap-3 md:flex-row md:gap-0"
             style={{ '--vault-liste-breite': `${liste.breite}px` } as CSSProperties}
         >
+            {!handyListe && (
+                <Button variant="outline" size="sm" className="justify-start md:hidden" onClick={() => setHandyListe(true)}>
+                    <PanelLeftOpen /> Dateiliste zeigen
+                </Button>
+            )}
             {liste.eingeklappt && (
                 <div className="hidden shrink-0 md:mr-2 md:flex md:flex-col">
                     <Button size="icon" variant="ghost" aria-label="Dateiliste aufklappen" title="Dateiliste aufklappen" onClick={() => liste.setEingeklappt(false)}>
@@ -285,7 +311,11 @@ export function VaultBrowser({
                 </div>
             )}
             <aside
-                className={cn('flex w-full shrink-0 flex-col gap-2 md:w-[var(--vault-liste-breite)]', liste.eingeklappt && 'md:hidden')}
+                className={cn(
+                    'flex w-full shrink-0 flex-col gap-2 md:w-[var(--vault-liste-breite)]',
+                    liste.eingeklappt && 'md:hidden',
+                    !handyListe && 'max-md:hidden',
+                )}
                 data-dateiliste
             >
                 <div className="flex items-center justify-between gap-2">
@@ -297,6 +327,16 @@ export function VaultBrowser({
                             aria-label="Dateiliste einklappen"
                             title="Dateiliste einklappen"
                             onClick={() => liste.setEingeklappt(true)}
+                        >
+                            <PanelLeftClose />
+                        </Button>
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-7 md:hidden"
+                            aria-label="Dateiliste ausblenden"
+                            title="Dateiliste ausblenden"
+                            onClick={() => setHandyListe(false)}
                         >
                             <PanelLeftClose />
                         </Button>

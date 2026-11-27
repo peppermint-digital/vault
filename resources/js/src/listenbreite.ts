@@ -1,50 +1,54 @@
 import { useCallback, useEffect, useState } from 'react';
 
 /**
- * Breite der Dateiliste und ob sie eingeklappt ist (0.7.4) - je Person lokal im
- * Browser gemerkt. Nur fuer breite Bildschirme; auf dem Handy bleibt die Liste,
- * wie sie war (volle Breite ueber der Datei).
+ * Breite der Dateiliste und ob sie eingeklappt ist - je Person lokal im Browser
+ * gemerkt (0.7.4; Format seit 0.7.5).
+ *
+ * Die Breite steht als reine Zahl unter `breiteSchluessel` (Produkt-Prop
+ * `baumBreiteSchluessel`, AI Brain: 'ai-brain-vault-sidebar-w' - so behalten
+ * Leute ihre alte Breite), sonst unter einem eigenen Schluessel. Einklappen
+ * gilt fuer breite Bildschirme; das Handy hat sein eigenes, nicht gemerktes
+ * Verhalten im VaultBrowser.
  */
 export const LISTE_MIN = 200;
 export const LISTE_MAX = 600;
 export const LISTE_VORGABE = 288; // = bisheriges md:w-72
-const SCHLUESSEL = 'vault-browser:liste';
-
-interface Stand {
-    breite: number;
-    eingeklappt: boolean;
-}
+const BREITE_VORGABE_SCHLUESSEL = 'vault-browser:liste-breite';
+const EINGEKLAPPT_SCHLUESSEL = 'vault-browser:liste-eingeklappt';
 
 export function begrenzt(breite: number): number {
     return Math.round(Math.min(LISTE_MAX, Math.max(LISTE_MIN, breite)));
 }
 
-function lesen(): Stand {
+function lesen(schluessel: string): string | null {
     try {
-        const roh = globalThis.localStorage?.getItem(SCHLUESSEL);
-        const d = roh ? (JSON.parse(roh) as Partial<Stand>) : {};
-        return {
-            breite: typeof d.breite === 'number' ? begrenzt(d.breite) : LISTE_VORGABE,
-            eingeklappt: d.eingeklappt === true,
-        };
+        return globalThis.localStorage?.getItem(schluessel) ?? null;
     } catch {
-        return { breite: LISTE_VORGABE, eingeklappt: false };
+        return null;
     }
 }
 
-export function useListenbreite() {
-    const [stand, setStand] = useState<Stand>(lesen);
+function schreiben(schluessel: string, wert: string): void {
+    try {
+        globalThis.localStorage?.setItem(schluessel, wert);
+    } catch {
+        // Gesperrter Speicher (privates Fenster): dann gilt es nur fuer diese Sitzung.
+    }
+}
 
-    useEffect(() => {
-        try {
-            globalThis.localStorage?.setItem(SCHLUESSEL, JSON.stringify(stand));
-        } catch {
-            // Gesperrter Speicher (privates Fenster): dann gilt es nur fuer diese Sitzung.
-        }
-    }, [stand]);
+export function useListenbreite(breiteSchluessel?: string) {
+    const schluessel = breiteSchluessel || BREITE_VORGABE_SCHLUESSEL;
+    const [breite, setBreiteRoh] = useState<number>(() => {
+        const zahl = Number.parseFloat(lesen(schluessel) ?? '');
+        return Number.isFinite(zahl) ? begrenzt(zahl) : LISTE_VORGABE;
+    });
+    const [eingeklappt, setEingeklapptRoh] = useState<boolean>(() => lesen(EINGEKLAPPT_SCHLUESSEL) === '1');
 
-    const setBreite = useCallback((breite: number) => setStand((s) => ({ ...s, breite: begrenzt(breite) })), []);
-    const setEingeklappt = useCallback((eingeklappt: boolean) => setStand((s) => ({ ...s, eingeklappt })), []);
+    useEffect(() => schreiben(schluessel, String(breite)), [schluessel, breite]);
+    useEffect(() => schreiben(EINGEKLAPPT_SCHLUESSEL, eingeklappt ? '1' : '0'), [eingeklappt]);
 
-    return { breite: stand.breite, eingeklappt: stand.eingeklappt, setBreite, setEingeklappt };
+    const setBreite = useCallback((wert: number) => setBreiteRoh(begrenzt(wert)), []);
+    const setEingeklappt = useCallback((wert: boolean) => setEingeklapptRoh(wert), []);
+
+    return { breite, eingeklappt, setBreite, setEingeklappt };
 }

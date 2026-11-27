@@ -45,6 +45,11 @@ export interface AnsichtSlot {
 export interface AutoSpeichern {
     /** Welche Dateien: Muster oder Entscheidung je Pfad. Vorgabe: Zeichnungen (`.excalidraw`). */
     dateien?: RegExp | ((pfad: string) => boolean);
+    /**
+     * Mit Schreibrecht sofort im Editor oeffnen, ohne „Bearbeiten" und ohne „Verwerfen"
+     * (0.7.5, Vorgabe true) - so war eine Zeichnung in AI Brain immer bearbeitbar.
+     */
+    direkt?: boolean;
     nachMs?: number;
 }
 
@@ -173,6 +178,7 @@ export function Dateiansicht({
             return;
         }
         setSpeichert(true);
+        setMeldung('Speichert…');
         try {
             const d = await api.speichern(scope, pfad, e, z.version, false);
             setZustand({ art: 'da', inhalt: e, version: d.version });
@@ -188,6 +194,29 @@ export function Dateiansicht({
             setSpeichert(false);
         }
     }, [api, scope, pfad, onGespeichert]);
+
+    // Direkt bearbeitbar (0.7.5): sobald geladen, liegt der Inhalt im Editor - auch wieder nach
+    // „Speichern" oder „Andere Fassung uebernehmen".
+    const direkt = autoAn && (autoSpeichern?.direkt ?? true);
+    useEffect(() => {
+        if (direkt && entwurf === null && zustand.art === 'da') {
+            setEntwurf(zustand.inhalt);
+        }
+    }, [direkt, entwurf, zustand]);
+
+    // Nichts verlieren beim Schliessen des Tabs: Browser fragt nach, solange Ungespeichertes da ist.
+    const ungespeichert = autoAn && entwurf !== null && zustand.art === 'da' && entwurf !== zustand.inhalt;
+    useEffect(() => {
+        if (!ungespeichert) {
+            return;
+        }
+        const warnen = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', warnen);
+        return () => window.removeEventListener('beforeunload', warnen);
+    }, [ungespeichert]);
 
     useEffect(() => {
         if (!autoAn || entwurf === null || zustand.art !== 'da' || entwurf === zustand.inhalt || konflikt !== null || speichert) {
@@ -286,9 +315,11 @@ export function Dateiansicht({
                 )}
                 {bearbeitet && (
                     <>
-                        <Button size="sm" variant="ghost" onClick={() => setEntwurf(null)} disabled={speichert}>
-                            <X /> Verwerfen
-                        </Button>
+                        {!direkt && (
+                            <Button size="sm" variant="ghost" onClick={() => setEntwurf(null)} disabled={speichert}>
+                                <X /> Verwerfen
+                            </Button>
+                        )}
                         <Button size="sm" onClick={() => speichern()} disabled={speichert}>
                             <Save /> Speichern
                         </Button>

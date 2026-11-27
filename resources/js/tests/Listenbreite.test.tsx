@@ -17,12 +17,22 @@ afterEach(() => {
  * 0.7.4 (Keeper): Dateiliste breiter/schmaler ziehen und einklappen, je Person
  * lokal gemerkt; auf dem Handy unveraendert (alles nur ab md).
  */
-function browser() {
+function browser(props: { baumBreiteSchluessel?: string; startPfad?: string } = {}) {
     const s = falscherServer({
-        'GET baum': { json: { bereich: { slug: 'private', label: 'Persönlich', persoenlich: true, darfSchreiben: true }, baum: [] } },
+        'GET baum': {
+            json: {
+                bereich: { slug: 'private', label: 'Persönlich', persoenlich: true, darfSchreiben: true },
+                baum: [
+                    { name: 'a.md', path: 'a.md', type: 'file' },
+                    { name: 'b.md', path: 'b.md', type: 'file' },
+                ],
+            },
+        },
+        'GET datei': { json: { path: 'a.md', content: '# a', version: 'v', file_id: null } },
+        'GET verweise': { json: { backlinks: [] } },
     });
     const api = vaultApi({ basisUrl: '/vault/api', fetch: s.holen });
-    return render(<VaultBrowser api={api} scope="private" />);
+    return render(<VaultBrowser api={api} scope="private" {...props} />);
 }
 
 const trenner = (c: HTMLElement) => c.querySelector<HTMLElement>('[role="separator"]');
@@ -98,6 +108,51 @@ describe('Dateiliste', () => {
 
         act(() => trenner(container)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })));
         expect(breiteVar(container)).toBe('272px');
+        unmount();
+    });
+
+    it('merkt die Breite als Zahl unter dem Schlüssel des Produkts (AI Brain behält seine alte Breite)', async () => {
+        globalThis.localStorage.setItem('ai-brain-vault-sidebar-w', '420');
+        const { container, unmount } = browser({ baumBreiteSchluessel: 'ai-brain-vault-sidebar-w' });
+        await warten();
+        expect(breiteVar(container)).toBe('420px');
+
+        act(() => trenner(container)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })));
+        expect(globalThis.localStorage.getItem('ai-brain-vault-sidebar-w')).toBe('404');
+        unmount();
+    });
+});
+
+/*
+ * 0.7.5 (Keeper: fuer alle Produkte, wie bisher in AI Brain): Auf dem Handy
+ * steht die Liste eingeklappt ueber einer offenen Datei und klappt nach der
+ * Wahl einer Datei wieder zu. Nur max-md-Klassen - breite Bildschirme unberuehrt.
+ */
+describe('Dateiliste auf dem Handy', () => {
+    const liste = (c: HTMLElement) => c.querySelector('[data-dateiliste]')!;
+    const knopf = (c: HTMLElement, text: string) =>
+        [...c.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text || b.getAttribute('aria-label') === text);
+
+    it('ist bei offener Datei eingeklappt, lässt sich zeigen und klappt nach der Dateiwahl wieder zu', async () => {
+        const { container, unmount } = browser({ startPfad: 'a.md' });
+        await warten();
+        await warten();
+        expect(liste(container).className).toContain('max-md:hidden');
+        expect(knopf(container, 'Dateiliste zeigen')?.className).toContain('md:hidden');
+
+        act(() => knopf(container, 'Dateiliste zeigen')!.click());
+        expect(liste(container).className).not.toContain('max-md:hidden');
+
+        act(() => knopf(container, 'b.md')!.click());
+        await warten();
+        expect(liste(container).className).toContain('max-md:hidden');
+        unmount();
+    });
+
+    it('steht offen, solange keine Datei offen ist', async () => {
+        const { container, unmount } = browser();
+        await warten();
+        expect(liste(container).className).not.toContain('max-md:hidden');
         unmount();
     });
 });

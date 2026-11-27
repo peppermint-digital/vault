@@ -69,6 +69,17 @@ In jedem Produkt sieht die Vault-Leiste gleich aus, Vorbild ist AI Brain. Die Le
   - „Ordner hochladen“ gibt es oben und im ⋮ eines Ordners. Unterordner bleiben erhalten.
   - Hochgeladen wird nacheinander; der Server legt fehlende Ordner selbst an.
   - Ohne Schreibrecht gibt es weder Ablage noch Knopf.
+- **Ergänzungen** (0.7.5, „keine Funktion geht verloren“):
+  - **`baumBreiteSchluessel`:** localStorage-Schlüssel, unter dem die Listenbreite als reine Zahl steht. AI Brain gibt `ai-brain-vault-sidebar-w` an, damit die alte Breite bleibt. Ohne Angabe nutzt das Paket einen eigenen Schlüssel. Das 0.7.4-Format gilt nicht mehr; 0.7.4 war nirgends ausgerollt.
+  - **Handy, für alle Produkte:**
+    - Ist eine Datei offen, steht die Liste eingeklappt darüber („Dateiliste zeigen“).
+    - Nach der Wahl einer Datei klappt sie wieder zu.
+    - Ohne offene Datei ist sie offen.
+    - Der Zustand wird nicht gemerkt.
+  - **`autoSpeichern.direkt`** (Vorgabe true):
+    - Mit Schreibrecht öffnen passende Dateien sofort im Editor, ohne „Bearbeiten“ und „Verwerfen“. „Speichern“ bleibt als Speichern-sofort.
+    - Ohne Schreibrecht nur Ansicht.
+  - **Warnung beim Schließen des Tabs**, solange Ungespeichertes da ist; dazu der Status „Speichert…“.
 - **Dateiliste und automatisches Speichern** (0.7.4):
   - **Dateiliste:**
     - Auf breiten Bildschirmen lässt sich die Breite am Trenner ziehen (200–600 px, Pfeiltasten ±16, Doppelklick = Vorgabe 288).

@@ -12,11 +12,18 @@ const warten = (ms = 0) => act(async () => { await new Promise((r) => setTimeout
  * 0.7.4 (Keeper, mit aibrain-e1 abgestimmt): Zeichnungen speichern sich beim
  * Bearbeiten selbst - ueber denselben Weg wie „Speichern", Vorgabe aus.
  */
-function aufbau(opts: { auto?: { dateien?: RegExp | ((p: string) => boolean); nachMs?: number }; datei?: string; patch?: (m: Mitschrift, n: number) => { status?: number; json: unknown } }) {
+function aufbau(opts: {
+    auto?: { dateien?: RegExp | ((p: string) => boolean); nachMs?: number; direkt?: boolean };
+    datei?: string;
+    darfSchreiben?: boolean;
+    patch?: (m: Mitschrift, n: number) => { status?: number; json: unknown };
+}) {
     const datei = opts.datei ?? 'skizze.excalidraw';
     let n = 0;
     const s = falscherServer({
-        'GET baum': { json: { bereich: { slug: 'private', label: 'P', persoenlich: true, darfSchreiben: true }, baum: [{ name: datei, path: datei, type: 'file' }] } },
+        'GET baum': {
+            json: { bereich: { slug: 'private', label: 'P', persoenlich: true, darfSchreiben: opts.darfSchreiben ?? true }, baum: [{ name: datei, path: datei, type: 'file' }] },
+        },
         'GET datei': { json: { path: datei, content: '{}', version: 'v1', file_id: null } },
         'PATCH datei': (m) => (opts.patch ? opts.patch(m, ++n) : { json: { saved: true, version: `v${++n + 1}` } }),
         'GET verweise': { json: { backlinks: [] } },
@@ -35,9 +42,11 @@ function aufbau(opts: { auto?: { dateien?: RegExp | ((p: string) => boolean); na
             }}
         />,
     );
-    const bearbeiten = () => act(() => [...r.container.querySelectorAll('button')].find((b) => b.textContent?.includes('Bearbeiten'))!.click());
+    // Seit 0.7.5 oeffnen passende Dateien direkt im Editor - dann gibt es keinen Bearbeiten-Knopf.
+    const knopf = (text: string) => [...r.container.querySelectorAll('button')].find((b) => b.textContent?.includes(text));
+    const bearbeiten = () => act(() => knopf('Bearbeiten')?.click());
     const patches = () => s.mitschrift.filter((m) => m.methode === 'PATCH').map((m) => m.rumpf as { content: string; base_version: string });
-    return { ...r, slots, bearbeiten, patches };
+    return { ...r, slots, bearbeiten, patches, knopf };
 }
 
 describe('Automatisch speichern', () => {
@@ -115,5 +124,51 @@ describe('Automatisch speichern', () => {
         await warten(10);
 
         expect(t.patches()).toEqual([expect.objectContaining({ content: '{"zuletzt":1}', base_version: 'v1' })]);
+    });
+
+    it('öffnet passende Dateien mit Schreibrecht direkt im Editor, ohne Bearbeiten und Verwerfen', async () => {
+        const t = aufbau({ auto: { nachMs: 30 } });
+        await warten();
+        await warten();
+
+        expect(t.container.querySelector('[data-editor]')).not.toBeNull();
+        expect(t.knopf('Bearbeiten')).toBeUndefined();
+        expect(t.knopf('Verwerfen')).toBeUndefined();
+        expect(t.knopf('Speichern')).toBeDefined();
+        t.unmount();
+    });
+
+    it('lässt sich ohne direkt wie bisher erst über Bearbeiten öffnen', async () => {
+        const t = aufbau({ auto: { nachMs: 30, direkt: false } });
+        await warten();
+        await warten();
+
+        expect(t.container.querySelector('[data-editor]')).toBeNull();
+        expect(t.knopf('Bearbeiten')).toBeDefined();
+        t.unmount();
+    });
+
+    it('zeigt ohne Schreibrecht nur die Ansicht', async () => {
+        const t = aufbau({ auto: { nachMs: 30 }, darfSchreiben: false });
+        await warten();
+        await warten();
+
+        expect(t.container.querySelector('[data-editor]')).toBeNull();
+        t.unmount();
+    });
+
+    it('fragt beim Schließen des Tabs nach, solange etwas ungespeichert ist', async () => {
+        const t = aufbau({ auto: { nachMs: 5000 } });
+        await warten();
+        await warten();
+        const vorher = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(vorher);
+        expect(vorher.defaultPrevented).toBe(false);
+
+        act(() => t.slots.at(-1)!.onAendern('{"neu":1}'));
+        const nachher = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(nachher);
+        expect(nachher.defaultPrevented).toBe(true);
+        t.unmount();
     });
 });

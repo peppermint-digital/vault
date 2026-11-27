@@ -1,6 +1,6 @@
 {
     "name": "@peppermint-digital/vault",
-    "version": "0.7.4",
+    "version": "0.7.5",
     "description": "Die Browser-Haelfte zu peppermint/vault: Ordnerbaum, Dateiansicht mit Konfliktschutz, Versionen, Papierkorb, Freigaben und die Anbindung an die JSON-Schiene des PHP-Pakets.",
     "license": "MIT",
     "type": "module",
